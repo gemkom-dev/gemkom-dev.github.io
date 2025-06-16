@@ -26,8 +26,8 @@ class TaskView {
 
   getTaskIdFromUrl() {
     const path = window.location.pathname;
-    const match = path.match(/\/talasli-imalat\/(ti-\d+)$/i);
-    return match ? match[1].toUpperCase() : null;
+    const match = path.match(/\/task-(\d+)$/);
+    return match ? match[1] : null;
   }
 
   async loadTaskData() {
@@ -43,7 +43,7 @@ class TaskView {
         return;
       }
 
-      this.taskTitle.textContent = task.key;
+      this.taskTitle.textContent = task.title || `Task-${this.taskId}`;
       this.updateTimerDisplay(0);
     } catch (error) {
       console.error('Error loading task:', error);
