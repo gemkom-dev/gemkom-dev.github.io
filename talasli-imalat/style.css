@@ -127,7 +127,6 @@ h1 {
   box-shadow: 0 2px 4px var(--shadow-color);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid var(--border-color);
-  cursor: pointer;
 }
 
 .task-card:hover {
@@ -135,21 +134,14 @@ h1 {
   box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.task-link {
-  text-decoration: none;
-  color: inherit;
-  display: block;
-  width: 100%;
-}
-
-.task-content h3 {
+.task-card h3 {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--primary-color);
   margin: 0 0 0.5rem 0;
 }
 
-.task-content p {
+.task-card p {
   margin: 0.5rem 0;
   color: var(--text-light);
   font-size: 0.9rem;
