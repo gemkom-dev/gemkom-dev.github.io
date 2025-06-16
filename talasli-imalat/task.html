@@ -1,30 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Task Timer - GEMKOM</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Görev Detayı - GEMKOM</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app">
-    <div id="top-bar">
-      <span id="current-user-label"></span>
-      <button id="logout-button">Çıkış Yap</button>
-    </div>
-
-    <div id="timer-view">
-      <h1 id="task-title" class="task-header">Loading...</h1>
-      
-      <div id="timer-display" class="timer-display">00:00:00</div>
-      
-      <div class="button-group">
-        <button id="start-stop" class="action-button green">Başlat</button>
-        <button id="manual-log-button" class="secondary-button">Süre Gir</button>
-        <button id="mark-done-button" class="secondary-button">Bitti Olarak İşaretle</button>
-        <button id="stop-only-button" class="danger-button">Sadece Durdur</button>
-        <button id="back-button" class="back-button">← Geri</button>
+  <div class="container">
+    <div class="task-details">
+      <h2 id="task-title">Yükleniyor...</h2>
+      <div class="task-info">
+        <div class="task-detail">
+          <span class="label">Görev No:</span>
+          <span id="task-number"></span>
+        </div>
+        <div class="task-detail">
+          <span class="label">Durum:</span>
+          <span id="task-status"></span>
+        </div>
+        <div class="task-detail">
+          <span class="label">Başlangıç:</span>
+          <span id="task-start"></span>
+        </div>
+        <div class="task-detail">
+          <span class="label">Bitiş:</span>
+          <span id="task-end"></span>
+        </div>
+        <div class="task-detail">
+          <span class="label">Geçen Süre:</span>
+          <span id="task-timer">00:00:00</span>
+        </div>
+      </div>
+      <div id="custom-fields"></div>
+      <div class="task-actions">
+        <button id="back-button" class="btn">Geri Dön</button>
       </div>
     </div>
   </div>

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Get the current path
+    const path = window.location.pathname;
+    
+    // Check if this is a task page
+    const taskMatch = path.match(/\/talasli-imalat\/(ti-\d+)$/i);
+    
+    if (taskMatch) {
+      // If it's a task page, redirect to the task.html with the task ID
+      window.location.href = `/talasli-imalat/task.html?task=${taskMatch[1]}`;
+    } else {
+      // If it's not a task page, redirect to the main page
+      window.location.href = '/';
+    }
+  </script>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html> 
