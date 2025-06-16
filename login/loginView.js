@@ -4,8 +4,11 @@ import { fetchUsers, checkLogin, saveLogin } from './loginService.js';
 export function setupLoginUI() {
   document.getElementById('login-button').addEventListener('click', async () => {
     const user = document.getElementById('user-select').value;
-    const pass = document.getElementById('password-input').value;
-    if (!user || !pass) return alert("Lütfen kullanıcı ve şifre giriniz.");
+    const pass = document.getElementById('password').value;
+    console.log(user, pass);
+    if (!user || !pass) {
+      return alert("Lütfen kullanıcı ve şifre giriniz.");
+    }
 
     const data = await checkLogin(user, pass);
     if (data) {

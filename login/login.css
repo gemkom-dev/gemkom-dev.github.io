@@ -66,25 +66,7 @@ body {
   padding-right: 30px;
 }
 
-#login-button {
-  width: 100%;
-  max-width: min(300px, 90vw);
-  padding: 16px;
-  font-size: 16px;
-  font-weight: bold;
-  background-color: #0052CC;
-  color: white;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
-}
 
-#login-button:hover,
-#login-button:active {
-  background-color: #003f9c;
-}
 
 /* Focus states for better accessibility */
 #user-select:focus,
@@ -110,9 +92,6 @@ body {
     font-size: 16px; /* Prevent zoom on iOS */
   }
   
-  #login-button {
-    padding: 14px;
-  }
 }
 
 /* Prevent zoom on input focus for iOS */
