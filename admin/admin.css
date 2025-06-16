@@ -4,6 +4,7 @@ body {
     padding: 0;
     background: #f9f9f9;
     color: #333;
+    box-sizing: border-box;
 }
 
 h1 {
@@ -111,14 +112,35 @@ th {
 
 @media (max-width: 600px) {
     .filter-controls {
-    flex-direction: column;
+        flex-direction: column;
+        padding: 0.5rem;
+    }
+
+    .filter-controls select,
+    .filter-controls input[type="text"] {
+        width: 100%;
+        margin: 4px 0;
     }
 
     table {
-    font-size: 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    th, td {
+        padding: 8px 12px;
     }
 
     .refresh-btn {
         width: 100%;
+        margin-top: 8px;
+    }
+
+    #top-bar {
+        padding: 8px 12px;
+    }
+
+    h1 {
+        font-size: 1.2rem;
+        padding: 0.8rem;
     }
 }

@@ -1,8 +1,9 @@
 body {
   font-family: sans-serif;
   max-width: 800px;
-  margin: 2rem auto;
+  margin: 0 auto;
   padding: 1rem;
+  box-sizing: border-box;
 }
 
 select,
@@ -194,6 +195,11 @@ a.task-link {
 }
 
 @media (max-width: 480px) {
+  body {
+    padding: 0.5rem;
+    margin: 0;
+  }
+
   .timer-display {
     font-size: 28px;
   }
@@ -204,6 +210,38 @@ a.task-link {
   .back-button {
     font-size: 14px;
     padding: 12px;
+  }
+
+  .task-card {
+    padding: 8px;
+    margin: 6px 0;
+  }
+
+  .task-left, .task-right {
+    min-width: 100%;
+  }
+
+  .task-right {
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  #top-bar {
+    padding: 8px 12px;
+  }
+
+  .filter-bar {
+    padding: 8px;
+  }
+
+  .filter-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  #search-input {
+    width: 100%;
+    margin: 8px 0;
   }
 }
 
