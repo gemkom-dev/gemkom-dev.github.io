@@ -51,17 +51,17 @@ export class MachiningView {
       taskCard.className = 'task-card';
       
       const taskLink = document.createElement('a');
-      taskLink.href = `/talasli-imalat/task-${task.id}`;
+      taskLink.href = `/talasli-imalat/${task.key.toLowerCase()}`;
       taskLink.className = 'task-link';
       
       const taskContent = document.createElement('div');
       taskContent.className = 'task-content';
       
       const title = document.createElement('h3');
-      title.textContent = task.title || `Task-${task.id}`;
+      title.textContent = task.key;
       
       const description = document.createElement('p');
-      description.textContent = task.description || 'Açıklama yok';
+      description.textContent = task.summary || 'Açıklama yok';
       
       taskContent.appendChild(title);
       taskContent.appendChild(description);
