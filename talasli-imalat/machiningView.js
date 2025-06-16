@@ -13,6 +13,101 @@ import {
 
 import { syncServerTime, getSyncedNow } from '../timeService.js';
 
+export class MachiningView {
+  constructor(service) {
+    this.service = service;
+    this.taskList = document.getElementById('task-list');
+    this.filterBar = document.getElementById('filter-bar');
+    this.searchInput = document.getElementById('search-input');
+    this.currentUserLabel = document.getElementById('current-user-label');
+    this.logoutButton = document.getElementById('logout-button');
+
+    this.initializeEventListeners();
+    this.updateUserInfo();
+  }
+
+  initializeEventListeners() {
+    this.searchInput.addEventListener('input', () => this.handleSearch());
+    this.logoutButton.addEventListener('click', () => this.handleLogout());
+  }
+
+  updateUserInfo() {
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      this.currentUserLabel.textContent = `Kullanıcı: ${currentUser}`;
+    }
+  }
+
+  handleLogout() {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/login/';
+  }
+
+  async renderTasks(tasks) {
+    this.taskList.innerHTML = '';
+    
+    tasks.forEach(task => {
+      const taskCard = document.createElement('div');
+      taskCard.className = 'task-card';
+      
+      const taskLink = document.createElement('a');
+      taskLink.href = `/talasli-imalat/task-${task.id}`;
+      taskLink.className = 'task-link';
+      
+      const taskContent = document.createElement('div');
+      taskContent.className = 'task-content';
+      
+      const title = document.createElement('h3');
+      title.textContent = task.title || `Task-${task.id}`;
+      
+      const description = document.createElement('p');
+      description.textContent = task.description || 'Açıklama yok';
+      
+      taskContent.appendChild(title);
+      taskContent.appendChild(description);
+      taskLink.appendChild(taskContent);
+      taskCard.appendChild(taskLink);
+      this.taskList.appendChild(taskCard);
+    });
+  }
+
+  renderFilterButtons(filters) {
+    this.filterBar.innerHTML = '';
+    
+    filters.forEach(filter => {
+      const button = document.createElement('button');
+      button.className = 'filter-button';
+      button.textContent = filter.label;
+      button.dataset.value = filter.value;
+      
+      if (filter.active) {
+        button.classList.add('active');
+      }
+      
+      button.addEventListener('click', () => this.handleFilterClick(filter.value));
+      this.filterBar.appendChild(button);
+    });
+  }
+
+  handleFilterClick(value) {
+    const buttons = this.filterBar.querySelectorAll('.filter-button');
+    buttons.forEach(button => {
+      if (button.dataset.value === value) {
+        button.classList.toggle('active');
+      } else {
+        button.classList.remove('active');
+      }
+    });
+    
+    this.service.setFilter(value);
+  }
+
+  handleSearch() {
+    const searchTerm = this.searchInput.value.toLowerCase();
+    this.service.setSearchTerm(searchTerm);
+  }
+}
+
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');
   ul.innerHTML = '';
@@ -230,7 +325,7 @@ export function setupTimerHandlers(issue, restoring = false) {
       })
     });
 
-    alert("Zamanlayıcı durduruldu. Jira’ya yazılmadı.");
+    alert("Zamanlayıcı durduruldu. Jira'ya yazılmadı.");
     resetTimerUI();
   };
 
