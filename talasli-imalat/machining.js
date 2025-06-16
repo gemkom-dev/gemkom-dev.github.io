@@ -1,18 +1,10 @@
 // --- machining.js ---
 import {
   state,
-  fetchIssuesByFilter,
-  restoreTimerState,
-  saveTimerState
+  fetchIssuesByFilter
 } from './machiningService.js';
 
-import {
-  renderTaskList,
-  setupMachineFilters,
-  setupSearchInput,
-  setupLogoutButton,
-  setupTimerHandlers
-} from './machiningView.js';
+import { MachiningView } from './machiningView.js';
 
 const filters = [
   { id: '10698', name: 'BF-V10' },
@@ -31,19 +23,29 @@ const filters = [
   { id: '10695', name: 'Toyoda Yatay' },
 ];
 
-async function loadAndRender(filterId) {
-  const issues = await fetchIssuesByFilter(filterId);
-  renderTaskList(issues, openTimer);
-}
-
-function openTimer(issue, restoring = false) {
-  setupTimerHandlers(issue, restoring);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
-  if (!state.userId) return (window.location.href = '/login');
-  setupMachineFilters(filters, loadAndRender);
-  setupSearchInput();
-  setupLogoutButton();
-  restoreTimerState(openTimer);
+  if (!state.userId) {
+    window.location.href = '/login';
+    return;
+  }
+
+  const view = new MachiningView({
+    setFilter: async (filterId) => {
+      const issues = await fetchIssuesByFilter(filterId);
+      view.renderTasks(issues);
+    },
+    setSearchTerm: (term) => {
+      // Implement search functionality if needed
+    }
+  });
+
+  // Initial load with first filter
+  if (filters.length > 0) {
+    view.renderFilterButtons(filters.map(f => ({
+      label: f.name,
+      value: f.id,
+      active: false
+    })));
+    fetchIssuesByFilter(filters[0].id).then(issues => view.renderTasks(issues));
+  }
 });
