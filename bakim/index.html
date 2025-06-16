@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Bakım</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    #myCustomTrigger {
+      font-size: 36px;
+      padding: 24px 48px;
+      background-color: #0052CC;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-top: 100px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      transition: transform 0.2s ease;
+    }
+
+    #myCustomTrigger:hover {
+      transform: scale(1.05);
+    }
+
+    .image-container {
+      margin-top: 40px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .image-container img {
+      max-width: 80%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Bakım Talebi</h1>
+  <button id="myCustomTrigger">📋 Bakım Talebi Gönder</button>
+
+  <div class="image-container">
+    <img src="../images/layout.png" alt="Layout">
+  </div>
+
+  <!-- Jira Issue Collector script (keep order) -->
+  <script type="text/javascript">
+    window.ATL_JQ_PAGE_PROPS = {
+      "triggerFunction": function(showCollectorDialog) {
+        jQuery("#myCustomTrigger").click(function(e) {
+          e.preventDefault();
+          showCollectorDialog();
+        });
+      }
+    };
+  </script>
+  <script type="text/javascript" src="https://gemkom-1.atlassian.net/s/d41d8cd98f00b204e9800998ecf8427e-T/xghl7j/b/9/c95134bc67d3a521bb3f4331beb9b804/_/download/batch/com.atlassian.jira.collector.plugin.jira-issue-collector-plugin:issuecollector/com.atlassian.jira.collector.plugin.jira-issuecollector-plugin:issuecollector.js?locale=tr-TR&collectorId=3eb49cb5"></script>
+
+</body>
+</html>
