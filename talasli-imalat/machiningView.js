@@ -63,55 +63,8 @@ export class MachiningView {
       const description = document.createElement('p');
       description.textContent = task.summary || 'Açıklama yok';
       
-      const details = document.createElement('div');
-      details.className = 'task-details';
-
-      // Add custom fields
-      if (task.customfield_10014) { // Machine
-        const machine = document.createElement('div');
-        machine.className = 'task-detail';
-        machine.innerHTML = `<strong>Makine:</strong> ${task.customfield_10014}`;
-        details.appendChild(machine);
-      }
-
-      if (task.customfield_10015) { // Operation
-        const operation = document.createElement('div');
-        operation.className = 'task-detail';
-        operation.innerHTML = `<strong>Operasyon:</strong> ${task.customfield_10015}`;
-        details.appendChild(operation);
-      }
-
-      if (task.customfield_10016) { // Material
-        const material = document.createElement('div');
-        material.className = 'task-detail';
-        material.innerHTML = `<strong>Malzeme:</strong> ${task.customfield_10016}`;
-        details.appendChild(material);
-      }
-
-      if (task.customfield_10017) { // Quantity
-        const quantity = document.createElement('div');
-        quantity.className = 'task-detail';
-        quantity.innerHTML = `<strong>Adet:</strong> ${task.customfield_10017}`;
-        details.appendChild(quantity);
-      }
-
-      if (task.customfield_10018) { // Drawing
-        const drawing = document.createElement('div');
-        drawing.className = 'task-detail';
-        drawing.innerHTML = `<strong>Çizim:</strong> ${task.customfield_10018}`;
-        details.appendChild(drawing);
-      }
-
-      if (task.customfield_10019) { // Status
-        const status = document.createElement('div');
-        status.className = 'task-detail';
-        status.innerHTML = `<strong>Durum:</strong> ${task.customfield_10019}`;
-        details.appendChild(status);
-      }
-      
       taskContent.appendChild(title);
       taskContent.appendChild(description);
-      taskContent.appendChild(details);
       taskLink.appendChild(taskContent);
       taskCard.appendChild(taskLink);
       this.taskList.appendChild(taskCard);
@@ -152,32 +105,6 @@ export class MachiningView {
   handleSearch() {
     const searchTerm = this.searchInput.value.toLowerCase();
     this.service.setSearchTerm(searchTerm);
-  }
-
-  createTaskElement(task) {
-    const taskElement = document.createElement('div');
-    taskElement.className = 'task-item';
-    taskElement.innerHTML = `
-      <div class="task-header">
-        <a href="/talasli-imalat/${task.key}" class="task-title">${task.key}</a>
-        <span class="task-status ${task.status}">${this.getStatusText(task.status)}</span>
-      </div>
-      <div class="task-details">
-        <div class="task-detail">
-          <span class="label">Başlangıç:</span>
-          <span>${formatDate(task.startTime)}</span>
-        </div>
-        <div class="task-detail">
-          <span class="label">Bitiş:</span>
-          <span>${task.endTime ? formatDate(task.endTime) : '-'}</span>
-        </div>
-        <div class="task-detail">
-          <span class="label">Geçen Süre:</span>
-          <span>${formatDuration(task.duration)}</span>
-        </div>
-      </div>
-    `;
-    return taskElement;
   }
 }
 

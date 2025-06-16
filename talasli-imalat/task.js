@@ -1,7 +1,5 @@
 import { machiningService } from './machiningService.js';
 import { timeService } from '../timeService.js';
-import { getTaskById, updateTaskStatus } from './api.js';
-import { formatDate, formatDuration } from './utils.js';
 
 class TaskView {
   constructor() {
@@ -39,43 +37,14 @@ class TaskView {
     }
 
     try {
-      const task = await getTaskById(this.taskId);
+      const task = await machiningService.getTask(this.taskId);
       if (!task) {
         this.showError('Task not found');
         return;
       }
 
-      this.taskTitle.textContent = task.title;
+      this.taskTitle.textContent = task.key;
       this.updateTimerDisplay(0);
-
-      // Update page title
-      document.title = `${this.taskId} - GEMKOM`;
-
-      // Fill in task details
-      document.getElementById('task-number').textContent = this.taskId;
-      document.getElementById('task-status').textContent = task.status;
-      document.getElementById('task-start').textContent = formatDate(task.startTime);
-      document.getElementById('task-end').textContent = task.endTime ? formatDate(task.endTime) : '-';
-
-      // Handle custom fields
-      const customFieldsContainer = document.getElementById('custom-fields');
-      if (task.customFields && Object.keys(task.customFields).length > 0) {
-        Object.entries(task.customFields).forEach(([key, value]) => {
-          const fieldDiv = document.createElement('div');
-          fieldDiv.className = 'task-detail';
-          fieldDiv.innerHTML = `
-            <span class="label">${key}:</span>
-            <span>${value}</span>
-          `;
-          customFieldsContainer.appendChild(fieldDiv);
-        });
-      }
-
-      // Start timer if task is in progress
-      if (task.status === 'in_progress') {
-        this.startTimer(task.startTime);
-      }
-
     } catch (error) {
       console.error('Error loading task:', error);
       this.showError('Error loading task data');
@@ -191,17 +160,4 @@ class TaskView {
 }
 
 // Initialize the task view
-new TaskView();
-
-// Load task data when page loads
-document.addEventListener('DOMContentLoaded', () => {
-  const taskView = new TaskView();
-  taskView.loadTaskData();
-});
-
-// Clean up timer when page is unloaded
-window.addEventListener('unload', () => {
-  if (taskView.timer) {
-    clearInterval(taskView.timer);
-  }
-}); 
+new TaskView(); 
