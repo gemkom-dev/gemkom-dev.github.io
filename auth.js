@@ -1,13 +1,8 @@
 import { isLoggedIn, isAdmin } from './globalVariables.js';
 
 // List of public routes that don't require authentication
-const publicRoutes = ['/login'];
-const adminRoutes = ['/admin'];
+const adminRoutes = ['/admin', '/admin/'];
 
-// Function to check if the current route is public
-function isPublicRoute(path) {
-    return publicRoutes.includes(path);
-}
 
 function isAdminRoute(path) {
     return adminRoutes.includes(path);
@@ -26,7 +21,7 @@ export function checkAuth() {
 
     if (isAdminRoute(currentPath) && !isAdmin()){
         // Redirect to login page
-        window.location.href = '/login';
+        window.location.href = '/';
         return false;
     }
 

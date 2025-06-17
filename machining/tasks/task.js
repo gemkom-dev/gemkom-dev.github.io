@@ -1,11 +1,11 @@
-import { state, restoreTimerState } from './machiningService.js';
-import { setupTimerHandlers, setupLogoutButton } from './machiningView.js';
-import { syncServerTime } from '../timeService.js';
-import { proxyBase } from '../base.js';
+import { state, restoreTimerState } from '../machiningService.js';
+import { setupTimerHandlers } from '../machiningView.js';
+import { syncServerTime } from '../../timeService.js';
+import { proxyBase } from '../../base.js';
 
 
-import { initNavbar } from '../components/navbar.js';
-import { checkAuth } from '../auth.js';
+import { initNavbar } from '../../components/navbar.js';
+import { checkAuth } from '../../auth.js';
 
 // Check authentication before initializing the page
 if (checkAuth()) {
@@ -13,20 +13,15 @@ if (checkAuth()) {
 }
 
 async function initializeTaskView() {
-    if (!state.userId) {
-        window.location.href = '/login';
-        return;
-    }
 
     await syncServerTime();
-    setupLogoutButton();
 
     // Get the task key from the URL query parameters
     const urlParams = new URLSearchParams(window.location.search);
     const taskKey = urlParams.get('key');
     
     if (!taskKey) {
-        window.location.href = '/talasli-imalat';
+        window.location.href = '/machining';
         return;
     }
 
@@ -37,7 +32,7 @@ async function initializeTaskView() {
 
     if (!response.ok) {
         alert('Task not found');
-        window.location.href = '/talasli-imalat';
+        window.location.href = '/machining';
         return;
     }
 

@@ -1,4 +1,4 @@
-import { updateActiveTimers, updateMachines, setupLogoutButton, setupEventListeners } from './adminView.js';
+import { updateActiveTimers, updateMachines, setupEventListeners } from './adminView.js';
 import { filters } from '../globalVariables.js';
 import { initNavbar } from '../components/navbar.js';
 import { checkAuth } from '../auth.js';
@@ -16,6 +16,5 @@ if (checkAuth()) {
 document.addEventListener('DOMContentLoaded', async () => {
     await updateActiveTimers();
     updateMachines();
-    setupLogoutButton();
     setupEventListeners();
 });

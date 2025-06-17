@@ -10,7 +10,6 @@ import {
   renderTaskList,
   setupMachineFilters,
   setupSearchInput,
-  setupLogoutButton,
   setupTimerHandlers
 } from './machiningView.js';
 
@@ -43,6 +42,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   setupMachineFilters(filters, loadAndRender);
   setupSearchInput();
-  setupLogoutButton();
   restoreTimerState(openTimer);
 });

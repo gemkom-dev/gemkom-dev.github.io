@@ -42,14 +42,18 @@ export function formatJiraDate(ms) {
 }
 
 export async function fetchIssuesByFilter(filterId) {
-  const url = `${state.base}/rest/api/3/search?jql=filter=${filterId}&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187, customfield_11411`;
-  const res = await fetch(proxyBase + encodeURIComponent(url), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-  const data = await res.json();
-  state.allIssues = data.issues;
-  return data.issues;
-}
+    const jql = `filter=${filterId} AND statusCategory!=Done`;
+    const encodedJql = encodeURIComponent(jql);
+    
+    const url = `${state.base}/rest/api/3/search?jql=${encodedJql}&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411`;
+    
+    const res = await fetch(proxyBase + encodeURIComponent(url), {
+        headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    state.allIssues = data.issues;
+    return data.issues;
+    }
 
 export function saveTimerState() {
   if (state.timerActive && state.startTime && state.currentIssueKey) {

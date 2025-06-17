@@ -24,7 +24,7 @@ export function renderTaskList(issues, openTimerCallback) {
         alert("Lütfen önce mevcut zamanlayıcıyı durdurun.");
         return;
       }
-      window.location.href = `/talasli-imalat/task.html?key=${issue.key}`;
+      window.location.href = `/machining/tasks/?key=${issue.key}`;
     };
 
     const fields = issue.fields;
@@ -77,22 +77,6 @@ export function setupSearchInput() {
     );
     renderTaskList(filtered, setupTimerHandlers);
   };
-}
-
-export function setupLogoutButton() {
-  const logoutButton = document.getElementById('logout-button');
-  if (logoutButton) {
-    logoutButton.onclick = () => {
-      if (state.timerActive) {
-        alert("Lütfen önce zamanlayıcıyı durdurun.");
-        return;
-      }
-      // Clear all states
-      localStorage.clear();
-      // Redirect to login page
-      window.location.href = '/login';
-    };
-  }
 }
 
 export function setupTimerHandlers(issue, restoring = false) {
@@ -237,7 +221,7 @@ export function setupTimerHandlers(issue, restoring = false) {
       clearInterval(state.intervalId);
       resetTimerUI();
     }
-    window.location.href = '/talasli-imalat';
+    window.location.href = '/machining';
   };
 
   manualBtn.onclick = async () => {

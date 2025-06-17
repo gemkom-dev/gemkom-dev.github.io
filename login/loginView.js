@@ -24,7 +24,7 @@ export function setupLoginUI() {
       const data = await checkLogin(user, pass);
       if (data) {
         saveLogin(user, data.admin);
-        window.location.href = data.admin ? '/admin' : '/talasli-imalat';
+        window.location.href = data.admin ? '/admin' : '/machining';
       } else {
         alert("Şifre hatalı.");
         passwordInput.value = '';

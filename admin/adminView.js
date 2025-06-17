@@ -57,15 +57,6 @@ export async function updateMachines() {
     });
 }
 
-export function setupLogoutButton() {
-    const logoutButton = document.getElementById('logout-button');
-    if (logoutButton) {
-        logoutButton.onclick = () => {
-            localStorage.clear();
-            window.location.href = '/login';
-        };
-    }
-}
 
 export function setupEventListeners() {
     document.addEventListener('click', async (e) => {

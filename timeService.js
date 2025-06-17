@@ -11,7 +11,6 @@ export async function syncServerTime() {
     const { now } = await res.json();
     const localNow = Date.now();
     serverTimeOffset = now - localNow;
-    console.log(`⏱ Server time offset: ${serverTimeOffset}ms`);
   } catch (err) {
     console.warn('⚠️ Failed to sync server time:', err);
     serverTimeOffset = 0;

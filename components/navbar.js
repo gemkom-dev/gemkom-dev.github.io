@@ -20,15 +20,15 @@ export function createNavbar() {
                         <a class="nav-link" href="/admin">Admin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/bakim">Bakım</a>
+                        <a class="nav-link" href="/maintenance">Bakım</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/talasli-imalat">Talaşlı İmalat</a>
+                        <a class="nav-link" href="/machining">Talaşlı İmalat</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/login">Giriş</a>
+                        <button id="logout-button" class="nav-link">Çıkış</button>
                     </li>
                 </ul>
             </div>
@@ -76,5 +76,16 @@ export function initNavbar() {
     if (navbarContainer) {
         const navbar = createNavbar();
         navbarContainer.appendChild(navbar);
+        setupLogoutButton();
     }
-} 
+}
+
+export function setupLogoutButton() {
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.onclick = () => {
+            localStorage.clear();
+            window.location.href = '/login';
+        };
+    }
+}
