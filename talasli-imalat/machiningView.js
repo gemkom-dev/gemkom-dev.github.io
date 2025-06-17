@@ -24,6 +24,7 @@ export function renderTaskList(issues, openTimerCallback) {
         alert("Lütfen önce mevcut zamanlayıcıyı durdurun.");
         return;
       }
+      state.selectedIssue = issue;
       window.location.href = `/talasli-imalat/task.html?key=${issue.key}`;
     };
 
@@ -181,7 +182,7 @@ export function setupTimerHandlers(issue, restoring = false) {
         body: JSON.stringify({
           user_id: state.userId,
           finish_time: state.finish_time,
-          machine: state.selectedMachine,
+          machine: state.selectedIssue.fields.customfield_11411,
           synced_to_jira: true
         })
       });
