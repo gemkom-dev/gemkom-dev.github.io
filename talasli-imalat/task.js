@@ -33,6 +33,8 @@ async function initializeTaskView() {
     }
 
     const issue = await response.json();
+    state.currentIssueKey = issue.key;
+    state.selectedIssue = issue.fields;
     document.getElementById('task-title').textContent = issue.key;
     const timer_container = document.getElementById('timer-container');
     const titleRow = document.createElement('div');

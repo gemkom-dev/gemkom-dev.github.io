@@ -24,7 +24,6 @@ export function renderTaskList(issues, openTimerCallback) {
         alert("Lütfen önce mevcut zamanlayıcıyı durdurun.");
         return;
       }
-      state.selectedIssue = issue;
       window.location.href = `/talasli-imalat/task.html?key=${issue.key}`;
     };
 
@@ -162,7 +161,7 @@ export function setupTimerHandlers(issue, restoring = false) {
           user_id: state.userId,
           issue_key: state.currentIssueKey,
           start_time: state.startTime,
-          machine: state.selectedMachine
+          machine: state.selectedIssue.customfield_11411.value
         })
       });
     } else {
@@ -181,8 +180,7 @@ export function setupTimerHandlers(issue, restoring = false) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           user_id: state.userId,
-          finish_time: state.finish_time,
-          machine: state.selectedIssue.fields.customfield_11411,
+          finish_time: getSyncedNow(),
           synced_to_jira: true
         })
       });
@@ -219,13 +217,12 @@ export function setupTimerHandlers(issue, restoring = false) {
   stopOnlyBtn.onclick = async () => {
     clearInterval(state.intervalId);
     resetTimerUI();
-    state.finish_time = getSyncedNow();
     await fetch(`${backendBase}/stop`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         user_id: state.userId,
-        finish_time: state.finish_time,
+        finish_time: getSyncedNow(),
         synced_to_jira: false
       })
     });

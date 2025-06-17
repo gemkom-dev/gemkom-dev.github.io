@@ -14,7 +14,7 @@ export const state = {
   userId: localStorage.getItem('user-id'),
   selectedMachine: null,
   allIssues: [],
-  selectedIssue: {}
+  selectedIssue: null
 };
 
 export function formatTime(secs) {
