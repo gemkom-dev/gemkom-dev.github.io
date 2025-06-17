@@ -181,6 +181,7 @@ export function setupTimerHandlers(issue, restoring = false) {
         body: JSON.stringify({
           user_id: state.userId,
           finish_time: state.finish_time,
+          machine: state.selectedMachine,
           synced_to_jira: true
         })
       });
