@@ -1,1 +1,0 @@
-# gemkom.github.io
