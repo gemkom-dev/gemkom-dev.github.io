@@ -29,8 +29,13 @@
 
     <!-- Main Content -->
     <div class="container mt-4">
-        <div class="timer-container">
-            <h2 id="task-title" class="text-center mb-4"></h2>
+        <div id="timer-container" class="timer-container">
+            <div id="title-row" class="title-row">
+                <h2 id="task-title" class="task-title"></h2>
+                <div class="task-right">
+                    <!-- dynamically filled -->
+                </div>
+            </div>
             <div class="timer-display" id="timer-display">00:00:00</div>
             <div class="timer-controls">
                 <button id="start-stop" class="action-button green">Başlat</button>

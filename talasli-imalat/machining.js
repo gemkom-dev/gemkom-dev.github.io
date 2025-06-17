@@ -43,24 +43,6 @@ function openTimer(issue, restoring = false) {
   setupTimerHandlers(issue, restoring);
 }
 
-async function initializeTaskView(taskKey) {
-  const response = await fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${taskKey}`), {
-    headers: { 'Content-Type': 'application/json' }
-  });
-
-  if (!response.ok) {
-    alert('Task not found');
-    return;
-  }
-
-  const issue = await response.json();
-  document.getElementById('main-view').classList.add('hidden');
-  document.getElementById('timer-view').classList.remove('hidden');
-  document.getElementById('task-title').textContent = issue.key;
-  setupTimerHandlers(issue);
-  restoreTimerState(setupTimerHandlers);
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
   if (!state.userId) return (window.location.href = '/login');
   
@@ -68,14 +50,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // Check if we have a task parameter
   const urlParams = new URLSearchParams(window.location.search);
-  const taskKey = urlParams.get('task');
   
-  if (taskKey) {
-    await initializeTaskView(taskKey);
-  } else {
-    setupMachineFilters(filters, loadAndRender);
-    setupSearchInput();
-    setupLogoutButton();
-    restoreTimerState(openTimer);
-  }
+  setupMachineFilters(filters, loadAndRender);
+  setupSearchInput();
+  setupLogoutButton();
+  restoreTimerState(openTimer);
 });

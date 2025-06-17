@@ -34,6 +34,28 @@ async function initializeTaskView() {
 
     const issue = await response.json();
     document.getElementById('task-title').textContent = issue.key;
+    const timer_container = document.getElementById('timer-container');
+    const titleRow = document.createElement('div');
+    titleRow.className = 'title-row';
+
+    const title = document.getElementById('task-title');
+    title.classList.add('task-title');
+
+    const right = document.createElement('div');
+    right.className = 'task-right';
+    right.innerHTML = `
+  <div class="field-row"><span class="label">İş Emri:</span><span class="value">${issue.fields.customfield_10117 || '-'}</span></div>
+  <div class="field-row"><span class="label">Resim No:</span><span class="value">${issue.fields.customfield_10184 || '-'}</span></div>
+  <div class="field-row"><span class="label">Poz No:</span><span class="value">${issue.fields.customfield_10185 || '-'}</span></div>
+  <div class="field-row"><span class="label">Adet:</span><span class="value">${issue.fields.customfield_10187 || '-'}</span></div>
+`;
+
+    // Move the title and right box into the same row
+    titleRow.appendChild(title);
+    titleRow.appendChild(right);
+
+    // Insert titleRow into timer_container
+    timer_container.prepend(titleRow);
     setupTimerHandlers(issue);
     restoreTimerState(setupTimerHandlers);
 }

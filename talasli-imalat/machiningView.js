@@ -54,20 +54,19 @@ export function renderTaskList(issues, openTimerCallback) {
 }
 
 export function setupMachineFilters(filters, onClick) {
-  const bar = document.getElementById('filter-bar');
-  bar.innerHTML = '';
+  const select = document.getElementById('filter-select');
+  select.innerHTML = '<option value="">Seçiniz...</option>'; // Reset options with placeholder
 
   filters.forEach(f => {
-    const btn = document.createElement('button');
-    btn.textContent = f.name;
-    btn.className = 'filter-button';
-    btn.onclick = () => {
-      document.querySelectorAll('.filter-button').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      onClick(f.id);
-    };
-    bar.appendChild(btn);
+    const option = document.createElement('option');
+    option.value = f.id;
+    option.textContent = f.name;
+    select.appendChild(option);
   });
+
+  select.onchange = () => {
+    onClick(select.value); // Call handler with selected value
+  };
 }
 
 export function setupSearchInput() {
