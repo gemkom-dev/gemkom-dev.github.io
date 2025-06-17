@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!isAdmin()) {
     return window.location.href = '/login';
   }
+  
   await populateUserFilter();
   await loadTimerTable();
   setupAdminListeners();

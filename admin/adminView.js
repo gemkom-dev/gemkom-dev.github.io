@@ -4,90 +4,133 @@ import { syncServerTime } from '../timeService.js';
 
 const activeRows = {};
 
-export async function populateUserFilter() {
-  const users = await fetchUsers();
-  const select = document.getElementById('user-filter');
-  select.innerHTML = '<option value="">Tümü</option>';
-  users.forEach(u => {
-    const option = document.createElement('option');
-    option.value = u.user_id;
-    option.textContent = u.user_id;
-    select.appendChild(option);
-  });
-}
-
-export async function loadTimerTable() {
-  const userFilter = document.getElementById('user-filter').value.toLowerCase();
-  const issueFilter = document.getElementById('issue-filter').value.toLowerCase();
-  const timers = await fetchActiveTimers();
-  const tableBody = document.querySelector('#admin-table tbody');
-  const newKeys = new Set();
-
-  timers.filter(t => {
-    if (t.finish_time) return false;
-    const matchesUser = userFilter ? t.user_id.toLowerCase() === userFilter : true;
-    const matchesIssue = issueFilter ? t.issue_key.toLowerCase().includes(issueFilter) : true;
-    return matchesUser && matchesIssue;
-  }).forEach(t => {
-    newKeys.add(t.issue_key);
-    if (activeRows[t.issue_key]) {
-      activeRows[t.issue_key].startTime = t.start_time;
-    } else {
-      const tr = document.createElement('tr');
-      const userTd = document.createElement('td');
-      const issueTd = document.createElement('td');
-      const durationTd = document.createElement('td');
-
-      userTd.textContent = t.user_id;
-      issueTd.textContent = t.issue_key;
-      durationTd.textContent = formatDuration(t.start_time);
-
-      tr.appendChild(userTd);
-      tr.appendChild(issueTd);
-      tr.appendChild(durationTd);
-      tableBody.appendChild(tr);
-
-      activeRows[t.issue_key] = {
-        startTime: t.start_time,
-        rowElement: tr,
-        durationCell: durationTd
-      };
+function setupLogoutButton() {
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.onclick = () => {
+            // Clear all states
+            localStorage.clear();
+            // Redirect to login page
+            window.location.href = '/login';
+        };
     }
-  });
+}
 
-  // Remove old rows
-  for (const key in activeRows) {
-    if (!newKeys.has(key)) {
-      activeRows[key].rowElement.remove();
-      delete activeRows[key];
+async function updateActiveTimers() {
+    const timers = await fetchActiveTimers();
+    const tbody = document.getElementById('active-timers');
+    tbody.innerHTML = '';
+
+    timers.filter(t => {
+        if (t.finish_time) {
+            return false;
+        }
+        const matchesUser = userFilter ? t.user_id.toLowerCase() === userFilter : true;
+        const matchesIssue = issueFilter ? t.issue_key.toLowerCase().includes(issueFilter) : true;
+        return matchesUser && matchesIssue;
+    }).forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${t.user_id}</td>
+            <td>${t.issue_key}</td>
+            <td>${new Date(t.start_time).toLocaleTimeString()}</td>
+            <td>${formatDuration(t.start_time)}</td>
+            <td>
+                <button class="btn btn-danger btn-sm stop-timer" data-timer-id="${t.id}">Durdur</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function updateUsers() {
+    const users = await fetchUsers();
+    const tbody = document.getElementById('users-list');
+    tbody.innerHTML = '';
+
+    users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${u.id}</td>
+            <td>${u.is_active ? 'Aktif' : 'Pasif'}</td>
+            <td>
+                <button class="btn btn-${u.is_active ? 'warning' : 'success'} btn-sm toggle-user" 
+                        data-user-id="${u.id}" 
+                        data-current-state="${u.is_active}">
+                    ${u.is_active ? 'Pasif Yap' : 'Aktif Yap'}
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+let userFilter = '';
+let issueFilter = '';
+
+function setupFilters() {
+    const userInput = document.getElementById('user-filter');
+    const issueInput = document.getElementById('issue-filter');
+
+    if (userInput) {
+        userInput.oninput = (e) => {
+            userFilter = e.target.value.toLowerCase();
+            updateActiveTimers();
+        };
     }
-  }
-}
 
-export function startDurationUpdater() {
-  setInterval(() => {
-    for (const key in activeRows) {
-      const row = activeRows[key];
-      row.durationCell.textContent = formatDuration(row.startTime);
+    if (issueInput) {
+        issueInput.oninput = (e) => {
+            issueFilter = e.target.value.toLowerCase();
+            updateActiveTimers();
+        };
     }
-  }, 1000);
 }
 
-export function setupAdminListeners() {
-  document.getElementById('user-filter').addEventListener('change', loadTimerTable);
-  document.getElementById('issue-filter').addEventListener('input', loadTimerTable);
-  document.getElementById('refresh-button').addEventListener('click', async () => {
-    const btn = document.getElementById('refresh-button');
-    btn.classList.add('loading');
-    await loadTimerTable();
-    btn.classList.remove('loading');
-  });
+function setupEventListeners() {
+    document.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('stop-timer')) {
+            const timerId = e.target.dataset.timerId;
+            try {
+                const res = await fetch(`${backendBase}/stop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timer_id: timerId })
+                });
+                if (res.ok) {
+                    updateActiveTimers();
+                }
+            } catch (err) {
+                console.error('Error stopping timer:', err);
+            }
+        }
 
-  document.getElementById('logout-button').addEventListener('click', () => {
-    localStorage.removeItem('user-id');
-    localStorage.removeItem('is-admin');
-    window.location.href = '/login';
-  });
+        if (e.target.classList.contains('toggle-user')) {
+            const userId = e.target.dataset.userId;
+            const currentState = e.target.dataset.currentState === 'true';
+            try {
+                const res = await fetch(`${backendBase}/user/toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, is_active: !currentState })
+                });
+                if (res.ok) {
+                    updateUsers();
+                }
+            } catch (err) {
+                console.error('Error toggling user:', err);
+            }
+        }
+    });
 }
 
-syncServerTime();
+// Initialize everything when the page loads
+document.addEventListener('DOMContentLoaded', async () => {
+    await syncServerTime();
+    setupLogoutButton();
+    setupFilters();
+    setupEventListeners();
+    await updateActiveTimers();
+    await updateUsers();
+    setInterval(updateActiveTimers, 1000);
+});
