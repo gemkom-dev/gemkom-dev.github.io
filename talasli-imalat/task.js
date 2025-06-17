@@ -3,6 +3,15 @@ import { setupTimerHandlers, setupLogoutButton } from './machiningView.js';
 import { syncServerTime } from '../timeService.js';
 import { proxyBase } from '../base.js';
 
+
+import { initNavbar } from '../components/navbar.js';
+import { checkAuth } from '../auth.js';
+
+// Check authentication before initializing the page
+if (checkAuth()) {
+    initNavbar();
+}
+
 async function initializeTaskView() {
     if (!state.userId) {
         window.location.href = '/login';

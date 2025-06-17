@@ -16,14 +16,12 @@ export async function checkLogin(user_id, password) {
 }
 
 export function saveLogin(userId, isAdmin) {
-  localStorage.setItem('user-id', userId);
-  localStorage.setItem('is-admin', isAdmin ? 'true' : 'false');
+  localStorage.setItem('userId', userId);
+  localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
 }
 
-export function isLoggedIn() {
-  return localStorage.getItem('user-id') !== null;
-}
-
-export function isAdmin() {
-  return localStorage.getItem('is-admin') === 'true';
+export function logout() {
+  localStorage.removeItem('userId');
+  localStorage.removeItem('isAdmin');
+  window.location.href = '/login';
 }

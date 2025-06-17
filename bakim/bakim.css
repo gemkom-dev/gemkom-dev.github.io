@@ -1,0 +1,60 @@
+:root {
+    --primary-color: #8B0000;
+    --secondary-color: #DC143C;
+    --accent-color: #FF4D4D;
+    --text-color: #2c3e50;
+    --light-bg: #f8f9fa;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: var(--text-color);
+    line-height: 1.6;
+    background-color: var(--light-bg);
+}
+
+.navbar {
+    background-color: var(--primary-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    color: white !important;
+    font-weight: 600;
+}
+
+.nav-link {
+    color: rgba(255,255,255,0.9) !important;
+    transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+    color: white !important;
+}
+
+.main-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(139, 0, 0, 0.1);
+}

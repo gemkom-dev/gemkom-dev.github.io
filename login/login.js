@@ -1,5 +1,5 @@
 // login/login.js
-import { isLoggedIn, isAdmin } from './loginService.js';
+import { isLoggedIn, isAdmin } from '../globalVariables.js';
 import { setupLoginUI, populateUserSelect } from './loginView.js';
 
 document.addEventListener('DOMContentLoaded', async () => {

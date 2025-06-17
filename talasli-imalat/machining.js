@@ -18,6 +18,13 @@ import { syncServerTime } from '../timeService.js';
 import { proxyBase } from '../base.js';
 import { filters } from '../globalVariables.js';
 
+import { initNavbar } from '../components/navbar.js';
+import { checkAuth } from '../auth.js';
+// Check authentication before initializing the page
+if (checkAuth()) {
+    initNavbar();
+}
+
 async function loadAndRender(filterId) {
   const issues = await fetchIssuesByFilter(filterId);
   renderTaskList(issues, openTimer);
@@ -28,7 +35,6 @@ function openTimer(issue, restoring = false) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!state.userId) return (window.location.href = '/login');
   
   await syncServerTime();
   
