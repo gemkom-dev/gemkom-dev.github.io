@@ -215,9 +215,19 @@ export function setupTimerHandlers(issue, restoring = false) {
     }
   };
 
-  stopOnlyBtn.onclick = () => {
+  stopOnlyBtn.onclick = async () => {
     clearInterval(state.intervalId);
     resetTimerUI();
+    state.finish_time = getSyncedNow();
+    await fetch(`${backendBase}/stop`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: state.userId,
+        finish_time: state.finish_time,
+        synced_to_jira: false
+      })
+    });
     window.location.reload();
   };
 
