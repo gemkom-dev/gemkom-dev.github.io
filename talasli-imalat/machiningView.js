@@ -24,7 +24,7 @@ export function renderTaskList(issues, openTimerCallback) {
         alert("Lütfen önce mevcut zamanlayıcıyı durdurun.");
         return;
       }
-      openTimerCallback(issue);
+      window.location.href = `/talasli-imalat/task.html?key=${issue.key}`;
     };
 
     const fields = issue.fields;
@@ -125,8 +125,6 @@ export function setupTimerHandlers(issue, restoring = false) {
   }
 
   state.currentIssueKey = issue.key;
-  document.getElementById('main-view').classList.add('hidden');
-  document.getElementById('timer-view').classList.remove('hidden');
   document.getElementById('task-title').textContent = issue.key;
 
   if (restoring) {
@@ -220,8 +218,7 @@ export function setupTimerHandlers(issue, restoring = false) {
   stopOnlyBtn.onclick = () => {
     clearInterval(state.intervalId);
     resetTimerUI();
-    document.getElementById('main-view').classList.remove('hidden');
-    document.getElementById('timer-view').classList.add('hidden');
+    window.location.reload();
   };
 
   backBtn.onclick = () => {
@@ -232,8 +229,7 @@ export function setupTimerHandlers(issue, restoring = false) {
       clearInterval(state.intervalId);
       resetTimerUI();
     }
-    document.getElementById('main-view').classList.remove('hidden');
-    document.getElementById('timer-view').classList.add('hidden');
+    window.location.href = '/talasli-imalat';
   };
 
   manualBtn.onclick = async () => {
@@ -287,7 +283,7 @@ export function setupTimerHandlers(issue, restoring = false) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          transition: { id: "31" }
+          transition: { id: "41" }
         })
       });
 
@@ -302,12 +298,3 @@ export function setupTimerHandlers(issue, restoring = false) {
     }
   };
 }
-
-// Initialize everything when the page loads
-document.addEventListener('DOMContentLoaded', async () => {
-  await syncServerTime();
-  setupLogoutButton();
-  setupMachineFilters();
-  setupSearchInput();
-  setupTimerHandlers();
-});
