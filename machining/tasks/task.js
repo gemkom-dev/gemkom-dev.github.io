@@ -195,6 +195,12 @@ async function logManualTime() {
     return new Promise((resolve) => {
         const submitBtn = modal.querySelector('#manual-time-submit');
         const cancelBtn = modal.querySelector('#manual-time-cancel');
+        const closeBtn = modal.querySelector('#manual-time-close');
+        
+        function closeModal() {
+            document.body.removeChild(modal);
+            resolve();
+        }
         
         submitBtn.onclick = async () => {
             const startDate = modal.querySelector('#start-date').value;
@@ -290,8 +296,7 @@ async function logManualTime() {
                 }
                 
                 // Close modal and resolve
-                document.body.removeChild(modal);
-                resolve();
+                closeModal();
                 
             } catch (error) {
                 console.error('Error logging manual time:', error);
@@ -301,16 +306,13 @@ async function logManualTime() {
             }
         };
         
-        cancelBtn.onclick = () => {
-            document.body.removeChild(modal);
-            resolve();
-        };
+        cancelBtn.onclick = closeModal;
+        closeBtn.onclick = closeModal;
         
         // Close modal when clicking outside
         modal.onclick = (e) => {
             if (e.target === modal) {
-                document.body.removeChild(modal);
-                resolve();
+                closeModal();
             }
         };
     });
@@ -333,7 +335,7 @@ function createManualTimeModal() {
         <div class="manual-time-modal-content">
             <div class="manual-time-modal-header">
                 <h3>Manuel Zaman Girişi</h3>
-                <button class="manual-time-close" id="manual-time-cancel">&times;</button>
+                <button class="manual-time-close" id="manual-time-close">&times;</button>
             </div>
             <div class="manual-time-modal-body">
                 <div class="time-input-group">

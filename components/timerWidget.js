@@ -8,7 +8,7 @@ import { backendBase } from '../base.js';
 </button> */ //STOP BUTTON FOR FUTURE USE
 class TimerWidget {
     constructor() {
-        this.isVisible = false;
+        this.isVisible = false; // Start minimized
         this.activeTimers = [];
         this.updateInterval = null;
         this.lastSyncTime = 0;
@@ -21,6 +21,9 @@ class TimerWidget {
         this.createWidget();
         this.loadActiveTimers();
         this.startUpdateInterval();
+        
+        // Ensure widget starts in minimized state
+        this.minimizeWidget();
     }
 
     async ensureTimeSync() {
@@ -67,6 +70,9 @@ class TimerWidget {
 
         // Make widget draggable
         this.makeDraggable(widget);
+        
+        // Add click outside to minimize functionality
+        this.setupClickOutsideToMinimize(widget);
     }
 
     makeDraggable(widget) {
@@ -102,6 +108,15 @@ class TimerWidget {
 
         document.addEventListener('mouseup', () => {
             isDragging = false;
+        });
+    }
+
+    setupClickOutsideToMinimize(widget) {
+        document.addEventListener('click', (e) => {
+            // Only minimize if widget is currently visible and click is outside the widget
+            if (this.isVisible && !widget.contains(e.target)) {
+                this.toggleWidget();
+            }
         });
     }
 
@@ -234,6 +249,18 @@ class TimerWidget {
             footer.style.display = 'none';
             toggle.textContent = '+';
         }
+    }
+
+    minimizeWidget() {
+        const content = document.getElementById('timer-widget-content');
+        const footer = document.querySelector('.timer-widget-footer');
+        const toggle = document.getElementById('timer-widget-toggle');
+        
+        this.isVisible = false;
+        
+        content.style.display = 'none';
+        footer.style.display = 'none';
+        toggle.textContent = '+';
     }
 
     destroy() {
