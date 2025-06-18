@@ -1,4 +1,4 @@
-import { updateActiveTimers, updateMachines, setupEventListeners } from './adminView.js';
+import { updateActiveTimers, updateMachines } from './adminView.js';
 import { filters } from '../globalVariables.js';
 import { initNavbar } from '../components/navbar.js';
 import { checkAuth } from '../auth.js';

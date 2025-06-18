@@ -56,28 +56,3 @@ export async function updateMachines() {
         tbody.appendChild(tr);
     });
 }
-
-
-export function setupEventListeners() {
-    document.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('stop-timer')) {
-            const timerId = e.target.dataset.timerId;
-            try {
-                const res = await fetch(`/backend/stop`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ timer_id: timerId })
-                });
-                if (res.ok) {
-                    updateActiveTimers();
-                    updateMachines();
-                }
-            } catch (err) {
-                console.error('Error stopping timer:', err);
-            }
-        }
-        if (e.target.id === 'refresh-btn') {
-            window.location.reload();
-        }
-    });
-}

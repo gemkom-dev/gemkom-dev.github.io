@@ -2,7 +2,7 @@
 import { backendBase } from '../base.js';
 
 export async function fetchUsers() {
-  const res = await fetch(`${backendBase}/user/list`);
+  const res = await fetch(`${backendBase}/users`);
   return await res.json();
 }
 
@@ -16,6 +16,7 @@ export async function checkLogin(user_id, password) {
 }
 
 export function saveLogin(userId, isAdmin) {
+  console.log(userId, isAdmin);
   localStorage.setItem('userId', userId);
   localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
 }

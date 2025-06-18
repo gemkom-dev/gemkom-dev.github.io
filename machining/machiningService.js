@@ -11,10 +11,11 @@ export const state = {
   currentIssueKey: null,
   startTime: null,
   finish_time: null,
-  userId: localStorage.getItem('user-id'),
+  userId: localStorage.getItem('userId'),
   selectedMachine: null,
   allIssues: [],
-  selectedIssue: null
+  selectedIssue: null,
+  currentTimerId: null
 };
 
 export function formatTime(secs) {
