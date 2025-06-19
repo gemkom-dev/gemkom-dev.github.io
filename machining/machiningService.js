@@ -43,7 +43,7 @@ export function formatJiraDate(ms) {
 }
 
 export async function fetchIssuesByFilter(filterId) {
-    const jql = `filter=${filterId} AND statusCategory!=Done`;
+    const jql = `filter=${filterId} AND status="To Do"`;
     const encodedJql = encodeURIComponent(jql);
     
     const url = `${state.base}/rest/api/3/search?jql=${encodedJql}&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411`;
