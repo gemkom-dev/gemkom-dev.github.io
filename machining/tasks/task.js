@@ -1,13 +1,8 @@
-import { state, restoreTimerState, formatTime, formatJiraDate, saveTimerState } from '../machiningService.js';
+import { state, restoreTimerState, formatTime, formatJiraDate, saveTimerState, stopTimerShared, logTimeToJiraShared } from '../machiningService.js';
 import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { proxyBase, backendBase } from '../../base.js';
 import { initNavbar } from '../../components/navbar.js';
-import { checkAuth } from '../../auth.js';
-
-// Initialize authentication and navbar
-if (checkAuth()) {
-    initNavbar();
-}
+import { authedFetch, isLoggedIn, logout } from '../../authService.js';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -102,7 +97,7 @@ function setupTaskInfoDisplay() {
 // ============================================================================
 
 async function fetchTaskDetails(taskKey) {
-    const response = await fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${taskKey}`), {
+    const response = await authedFetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${taskKey}`), {
         headers: { 'Content-Type': 'application/json' }
     });
     
@@ -114,7 +109,7 @@ async function fetchTaskDetails(taskKey) {
 }
 
 async function getActiveTimer(taskKey) {
-    const response = await fetch(`${backendBase}/machining/timers?user_id=${state.userId}&issue_key=${taskKey}&active=true`);
+    const response = await authedFetch(`${backendBase}/machining/timers?issue_key=${taskKey}&active=true`);
     
     if (!response.ok) {
         return null;
@@ -127,11 +122,9 @@ async function getActiveTimer(taskKey) {
 }
 
 async function startTimer() {
-    const response = await fetch(`${backendBase}/machining/start`, {
+    const response = await authedFetch(`${backendBase}/machining/timers/start/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            user_id: state.userId,
             issue_key: state.currentIssueKey,
             start_time: state.startTime,
             machine: state.selectedIssue.customfield_11411?.value || '',
@@ -143,47 +136,6 @@ async function startTimer() {
     });
     
     return response.json();
-}
-
-async function stopTimer(syncToJira = false) {
-    const response = await fetch(`${backendBase}/machining/stop`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            timer_id: state.currentTimerId,
-            user_id: state.userId,
-            finish_time: getSyncedNow(),
-            synced_to_jira: syncToJira
-        })
-    });
-    
-    return response.ok;
-}
-
-async function logTimeToJira(elapsedSeconds) {
-    const started = formatJiraDate(state.startTime);
-    
-    const response = await fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${state.currentIssueKey}/worklog`), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            started,
-            timeSpentSeconds: elapsedSeconds,
-            comment: {
-                type: 'doc',
-                version: 1,
-                content: [{
-                    type: 'paragraph',
-                    content: [{
-                        type: 'text',
-                        text: `Logged via GitHub Page: ${formatTime(elapsedSeconds)}`
-                    }]
-                }]
-            }
-        })
-    });
-    
-    return response.ok;
 }
 
 async function logManualTime() {
@@ -242,11 +194,9 @@ async function logManualTime() {
                 submitBtn.textContent = 'Kaydediliyor...';
                 
                 // Create timer in database
-                const timerResponse = await fetch(`${backendBase}/machining/manual-entry`, {
+                const timerResponse = await authedFetch(`${backendBase}/machining/manual-entry`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: state.userId,
                         issue_key: state.currentIssueKey,
                         start_time: startDateTime.getTime(),
                         finish_time: endDateTime.getTime(),
@@ -318,91 +268,15 @@ async function logManualTime() {
     });
 }
 
-function createManualTimeModal() {
-    const modal = document.createElement('div');
-    modal.className = 'manual-time-modal';
-    
-    // Set default values to current date and time
-    const now = new Date();
-    const currentDate = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-    
-    // Set end time to 1 hour later
-    const endDateTime = new Date(now.getTime() + 60 * 60 * 1000);
-    const endTimeStr = endDateTime.toTimeString().slice(0, 5);
-    
-    modal.innerHTML = `
-        <div class="manual-time-modal-content">
-            <div class="manual-time-modal-header">
-                <h3>Manuel Zaman Girişi</h3>
-                <button class="manual-time-close" id="manual-time-close">&times;</button>
-            </div>
-            <div class="manual-time-modal-body">
-                <div class="time-input-group">
-                    <label>Başlangıç:</label>
-                    <div class="datetime-inputs">
-                        <input type="date" id="start-date" value="${currentDate}" required>
-                        <input type="time" id="start-time" value="${currentTime}" required>
-                    </div>
-                </div>
-                <div class="time-input-group">
-                    <label>Bitiş:</label>
-                    <div class="datetime-inputs">
-                        <input type="date" id="end-date" value="${currentDate}" required>
-                        <input type="time" id="end-time" value="${endTimeStr}" required>
-                    </div>
-                </div>
-                <div class="manual-time-preview" id="time-preview">
-                    Süre: <span id="duration-preview">01:00:00</span>
-                </div>
-            </div>
-            <div class="manual-time-modal-footer">
-                <button class="btn btn-secondary" id="manual-time-cancel">İptal</button>
-                <button class="btn btn-primary" id="manual-time-submit">Kaydet</button>
-            </div>
-        </div>
-    `;
-    
-    // Add event listeners for real-time duration calculation
-    const startDate = modal.querySelector('#start-date');
-    const startTime = modal.querySelector('#start-time');
-    const endDate = modal.querySelector('#end-date');
-    const endTime = modal.querySelector('#end-time');
-    const durationPreview = modal.querySelector('#duration-preview');
-    
-    function updateDuration() {
-        try {
-            const startDateTime = new Date(`${startDate.value}T${startTime.value}`);
-            const endDateTime = new Date(`${endDate.value}T${endTime.value}`);
-            
-            if (!isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime()) && endDateTime > startDateTime) {
-                const elapsedSeconds = Math.round((endDateTime.getTime() - startDateTime.getTime()) / 1000);
-                durationPreview.textContent = formatTime(elapsedSeconds);
-            } else {
-                durationPreview.textContent = '00:00:00';
-            }
-        } catch (error) {
-            durationPreview.textContent = '00:00:00';
-        }
-    }
-    
-    startDate.addEventListener('change', updateDuration);
-    startTime.addEventListener('change', updateDuration);
-    endDate.addEventListener('change', updateDuration);
-    endTime.addEventListener('change', updateDuration);
-    
-    // Initial calculation
-    updateDuration();
-    
-    return modal;
-}
-
 async function markTaskAsDone() {
-    const response = await fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${state.currentIssueKey}/transitions`), {
+    const url = `${state.base}/rest/api/3/issue/${state.currentIssueKey}/transitions`;
+    const response = await authedFetch(proxyBase + encodeURIComponent(url), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            transition: { id: "41" }
+            transition: {
+                id: '41'
+            }
         })
     });
     
@@ -446,8 +320,8 @@ function setupStartStopHandler() {
             saveTimerState();
             
             try {
-                await stopTimer(true);
-                const logged = await logTimeToJira(elapsed);
+                await stopTimerShared({ timerId: state.currentTimerId, finishTime: state.finish_time, syncToJira: true });
+                const logged = await logTimeToJiraShared({ issueKey: state.currentIssueKey, baseUrl: state.base, startTime: state.startTime, elapsedSeconds: elapsed });
                 
                 if (logged) {
                     refreshTimerWidget();
@@ -473,7 +347,7 @@ function setupStopOnlyHandler() {
         setInactiveTimerUI();
         
         try {
-            await stopTimer(false);
+            await stopTimerShared({ timerId: state.currentTimerId, finishTime: getSyncedNow(), syncToJira: false });
             refreshTimerWidget();
             window.location.reload();
         } catch (error) {
@@ -517,7 +391,8 @@ function setupMarkDoneHandler() {
         try {
             const marked = await markTaskAsDone();
             if (marked) {
-                window.location.reload();
+                alert('Görev tamamlandı olarak işaretlendi.');
+                window.location.href = '/machining';
             } else {
                 alert("Hata oluştu. Lütfen tekrar deneyin.");
             }
@@ -559,6 +434,11 @@ function setupTimerHandlers(restoring = false) {
 // ============================================================================
 
 async function initializeTaskView() {
+    if (!isLoggedIn()) {
+        logout();
+        return;
+    }
+    initNavbar();
     await syncServerTime();
     
     const taskKey = getTaskKeyFromURL();
@@ -590,8 +470,25 @@ async function initializeTaskView() {
             refreshTimerWidget();
             console.log('Active timer loaded for task:', taskKey, activeTimer.id);
         } else {
-            // No active timer, fetch from Jira
-            const issue = await fetchTaskDetails(taskKey);
+            // No active timer, so we proceed to load task details
+            let issue;
+            const storedTaskJSON = sessionStorage.getItem('selectedTask');
+
+            // Try to load from sessionStorage first
+            if (storedTaskJSON) {
+                const storedTask = JSON.parse(storedTaskJSON);
+                if (storedTask.key === taskKey) {
+                    issue = storedTask;
+                    console.log('Loaded task details from session storage.');
+                }
+            }
+
+            // If not in storage (e.g., page refresh), fetch from API as a fallback
+            if (!issue) {
+                console.log('Task details not in session storage, fetching from API.');
+                issue = await fetchTaskDetails(taskKey);
+            }
+            
             state.currentIssueKey = issue.key;
             state.selectedIssue = issue.fields;
             setupTaskInfoDisplay();

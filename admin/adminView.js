@@ -1,5 +1,5 @@
 // --- adminView.js ---
-import { fetchUsers, fetchActiveTimers, formatDuration } from './adminService.js';
+import { fetchActiveTimers, formatDuration } from './adminService.js';
 import { state } from './admin.js';
 
 let timerIntervals = {};
@@ -17,7 +17,8 @@ export async function updateActiveTimers() {
             <td>${t.issue_key}</td>
             <td id="timer-${t.id}">${formatDuration(t.start_time)}</td>
             <td>
-                <button class="btn btn-danger btn-sm stop-timer" data-timer-id="${t.id}">Durdur</button>
+                <button class="btn btn-success btn-sm save-jira" data-timer-id="${t.id}">Jira'ya Kaydet</button>
+                <button class="btn btn-secondary btn-sm stop-only" data-timer-id="${t.id}">Sadece Durdur</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -27,14 +28,18 @@ export async function updateActiveTimers() {
 }
 
 function startTimerInterval(timerId, startTime) {
-    if (timerIntervals[timerId]) clearInterval(timerIntervals[timerId]);
+    if (timerIntervals[timerId]) {
+      clearInterval(timerIntervals[timerId]);
+    }
     function update() {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
         const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
         const s = (elapsed % 60).toString().padStart(2, '0');
         const el = document.getElementById(`timer-${timerId}`);
-        if (el) el.textContent = `${h}:${m}:${s}`;
+        if (el) {
+          el.textContent = `${h}:${m}:${s}`;
+        }
     }
     update();
     timerIntervals[timerId] = setInterval(update, 1000);
@@ -56,3 +61,4 @@ export async function updateMachines() {
         tbody.appendChild(tr);
     });
 }
+

@@ -1,4 +1,4 @@
-import { isLoggedIn } from "../globalVariables.js"
+import { logout } from '../authService.js';
 
 // Navbar component
 export function createNavbar() {
@@ -73,11 +73,55 @@ export function createNavbar() {
 // Function to initialize navbar
 export function initNavbar() {
     const navbarContainer = document.getElementById('navbar-container');
-    if (navbarContainer) {
-        const navbar = createNavbar();
-        navbarContainer.appendChild(navbar);
-        setupLogoutButton();
+    if (!navbarContainer) return;
+
+    const navHTML = `
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="/">
+                    <img src="/images/gemkom.png" alt="Gemkom Logo" style="height: 30px;">
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/machining">Talaşlı İmalat</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/maintenance">Bakım</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin">Admin</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <button id="logout-button" class="btn btn-danger">Çıkış Yap</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    `;
+    navbarContainer.innerHTML = navHTML;
+
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            logout();
+        });
     }
+
+    // Highlight active page
+    const links = navbarContainer.querySelectorAll('.nav-link');
+    const currentPath = window.location.pathname;
+    links.forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+            link.classList.add('active');
+        }
+    });
 }
 
 export function setupLogoutButton() {

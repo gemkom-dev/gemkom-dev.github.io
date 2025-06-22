@@ -24,6 +24,8 @@ export function renderTaskList(issues, openTimerCallback) {
         alert("Lütfen önce mevcut zamanlayıcıyı durdurun.");
         return;
       }
+      // Store the full issue object in sessionStorage to use on the next page
+      sessionStorage.setItem('selectedTask', JSON.stringify(issue));
       window.location.href = `/machining/tasks/?key=${issue.key}`;
     };
 

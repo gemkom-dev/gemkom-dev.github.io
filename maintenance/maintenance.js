@@ -1,7 +1,10 @@
 import { initNavbar } from '../components/navbar.js';
-import { checkAuth } from '../auth.js';
+import { isLoggedIn, logout } from '../authService.js';
 
-// Check authentication before initializing the page
-if (checkAuth()) {
-    initNavbar();
-}
+document.addEventListener('DOMContentLoaded', () => {
+    if (isLoggedIn()) {
+        initNavbar();
+    } else {
+        logout();
+    }
+});

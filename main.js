@@ -1,7 +1,15 @@
+import { isLoggedIn, logout } from './authService.js';
 import { initNavbar } from './components/navbar.js';
-import { checkAuth } from '/auth.js';
+import { TimerWidget } from './components/timerWidget.js';
 
-// Check authentication before initializing the page
-if (checkAuth()) {
-    initNavbar();
-}
+document.addEventListener('DOMContentLoaded', () => {
+    if (isLoggedIn()) {
+        initNavbar();
+        new TimerWidget();
+    } else {
+        // If not on the login page, redirect to login
+        if (window.location.pathname !== '/login/' && !window.location.pathname.endsWith('index.html')) {
+            logout();
+        }
+    }
+});

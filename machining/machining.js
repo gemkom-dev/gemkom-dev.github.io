@@ -14,12 +14,7 @@ import { syncServerTime } from '../timeService.js';
 import { filters } from '../globalVariables.js';
 
 import { initNavbar } from '../components/navbar.js';
-import { checkAuth } from '../auth.js';
-
-// Check authentication before initializing the page
-if (checkAuth()) {
-    initNavbar();
-}
+import { isLoggedIn, logout } from '../authService.js';
 
 async function loadAndRender(filterId) {
   const issues = await fetchIssuesByFilter(filterId);
@@ -29,10 +24,15 @@ async function loadAndRender(filterId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (!isLoggedIn()) {
+        logout();
+        return;
+    }
+    
+    initNavbar();
+    await syncServerTime();
   
-  await syncServerTime();
-  
-  // Check if we have a task parameter
+    // Check if we have a task parameter
   const urlParams = new URLSearchParams(window.location.search);
   
   setupMachineFilters(filters, loadAndRender);

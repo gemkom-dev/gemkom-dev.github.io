@@ -3,6 +3,7 @@ import {
   proxyBase,
   backendBase
 } from '../base.js';
+import { authedFetch } from '../authService.js';
 
 export const state = {
   base: 'https://gemkom-1.atlassian.net',
@@ -47,14 +48,14 @@ export async function fetchIssuesByFilter(filterId) {
     const encodedJql = encodeURIComponent(jql);
     
     const url = `${state.base}/rest/api/3/search?jql=${encodedJql}&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411`;
-    
+    const testBase = 'https://falling-bread-330e.ocalik.workers.dev/?url=';
     const res = await fetch(proxyBase + encodeURIComponent(url), {
         headers: { 'Content-Type': 'application/json' }
     });
     const data = await res.json();
     state.allIssues = data.issues;
     return data.issues;
-    }
+}
 
 export function saveTimerState() {
   if (state.timerActive && state.startTime && state.currentIssueKey) {
@@ -77,4 +78,61 @@ export function restoreTimerState(callback) {
       .then(res => res.json())
       .then(issue => callback(issue, true));
   }
+}
+
+/**
+ * Stops a timer in the backend.
+ * @param {Object} params
+ * @param {string|number} params.timerId
+ * @param {string|number} params.userId
+ * @param {number} params.finishTime (ms)
+ * @param {boolean} params.syncToJira
+ * @returns {Promise<boolean>}
+ */
+export async function stopTimerShared({ timerId, finishTime, syncToJira }) {
+    const response = await authedFetch(`${backendBase}/machining/timers/stop/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            timer_id: timerId,
+            finish_time: finishTime,
+            synced_to_jira: syncToJira
+        })
+    });
+    return response.ok;
+}
+
+/**
+ * Logs time to Jira for a given issue.
+ * @param {Object} params
+ * @param {string} params.issueKey
+ * @param {string} params.baseUrl
+ * @param {number} params.startTime (ms)
+ * @param {number} params.elapsedSeconds
+ * @param {string} [params.comment]
+ * @returns {Promise<boolean>}
+ */
+export async function logTimeToJiraShared({ issueKey, baseUrl, startTime, elapsedSeconds, comment }) {
+    const started = formatJiraDate(startTime);
+    const url = `${baseUrl}/rest/api/3/issue/${issueKey}/worklog`;
+    const response = await authedFetch(proxyBase + encodeURIComponent(url), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            started,
+            timeSpentSeconds: elapsedSeconds,
+            comment: {
+                type: 'doc',
+                version: 1,
+                content: [{
+                    type: 'paragraph',
+                    content: [{
+                        type: 'text',
+                        text: comment || `Logged via Admin Panel: ${formatTime(elapsedSeconds)}`
+                    }]
+                }]
+            }
+        })
+    });
+    return response.ok;
 }

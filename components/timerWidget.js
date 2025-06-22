@@ -3,12 +3,13 @@ import { state } from '../machining/machiningService.js';
 import { formatTime } from '../machining/machiningService.js';
 import { syncServerTime, getSyncedNow } from '../timeService.js';
 import { backendBase } from '../base.js';
+import { authedFetch } from '../authService.js';
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
 </button> */ //STOP BUTTON FOR FUTURE USE
-class TimerWidget {
+export class TimerWidget {
     constructor() {
-        this.isVisible = false; // Start minimized
+        this.isVisible = true; // Start visible
         this.activeTimers = [];
         this.updateInterval = null;
         this.lastSyncTime = 0;
@@ -21,9 +22,6 @@ class TimerWidget {
         this.createWidget();
         this.loadActiveTimers();
         this.startUpdateInterval();
-        
-        // Ensure widget starts in minimized state
-        this.minimizeWidget();
     }
 
     async ensureTimeSync() {
@@ -125,7 +123,7 @@ class TimerWidget {
             // Ensure time sync before loading timers
             await this.ensureTimeSync();
             
-            const response = await fetch(`${backendBase}/machining/timers?active=true&user=${state.userId}`);
+            const response = await authedFetch(`${backendBase}/machining/timers?active=true`);
             if (response.ok) {
                 this.activeTimers = await response.json();
                 this.renderTimers();
@@ -211,12 +209,10 @@ class TimerWidget {
             // Ensure time sync before stopping timer
             await this.ensureTimeSync();
             
-            const response = await fetch(`${backendBase}/machining/stop`, {
+            const response = await authedFetch(`${backendBase}/machining/timers/stop/`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     timer_id: timerId,
-                    user_id: state.userId,
                     finish_time: getSyncedNow(),
                     synced_to_jira: false
                 })
@@ -264,12 +260,14 @@ class TimerWidget {
     }
 
     destroy() {
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
+        clearInterval(this.updateInterval);
         const widget = document.getElementById('timer-widget');
         if (widget) {
-            widget.remove();
+            document.body.removeChild(widget);
+        }
+        // Remove the global instance if it exists
+        if (window.timerWidget === this) {
+            window.timerWidget = null;
         }
     }
 }
@@ -280,6 +278,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.location.pathname !== '/login' && localStorage.getItem('userId')) {
         window.timerWidget = new TimerWidget();
     }
-});
-
-export { TimerWidget }; 
+}); 
