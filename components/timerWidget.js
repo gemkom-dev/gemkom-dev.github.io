@@ -7,6 +7,8 @@ import { authedFetch } from '../authService.js';
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
 </button> */ //STOP BUTTON FOR FUTURE USE
+
+
 export class TimerWidget {
     constructor() {
         this.isVisible = true; // Start visible
@@ -18,9 +20,13 @@ export class TimerWidget {
 
     async init() {
         // Ensure time is synchronized when widget initializes
+        await this.loadActiveTimers();
+        if (this.activeTimers.length === 0) {
+            return;
+        }    
         await this.ensureTimeSync();
         this.createWidget();
-        this.loadActiveTimers();
+        this.renderTimers();
         this.startUpdateInterval();
     }
 
@@ -120,17 +126,14 @@ export class TimerWidget {
 
     async loadActiveTimers() {
         try {
-            // Ensure time sync before loading timers
-            await this.ensureTimeSync();
-            
-            const response = await authedFetch(`${backendBase}/machining/timers?active=true`);
+            const response = await authedFetch(`${backendBase}/machining/timers?is_active=true`);
             if (response.ok) {
                 this.activeTimers = await response.json();
-                this.renderTimers();
+                return true;
             }
         } catch (error) {
             console.error('Error loading active timers:', error);
-            this.renderTimers();
+            return false;
         }
     }
 
@@ -144,7 +147,6 @@ export class TimerWidget {
                     <div class="timer-widget-empty-text">Aktif zamanlayıcı yok</div>
                 </div>
             `;
-            return;
         }
 
         content.innerHTML = this.activeTimers.map(timer => `
@@ -272,10 +274,12 @@ export class TimerWidget {
     }
 }
 
+
 // Initialize timer widget when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Only show timer widget if user is logged in and not on login page
     if (window.location.pathname !== '/login' && localStorage.getItem('userId')) {
         window.timerWidget = new TimerWidget();
     }
-}); 
+});
+ 

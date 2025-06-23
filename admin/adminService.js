@@ -8,7 +8,7 @@ export async function fetchUsers() {
 }
 
 export async function fetchActiveTimers() {
-  const res = await authedFetch(`${backendBase}/machining/timers?active=true`);
+  const res = await authedFetch(`${backendBase}/machining/timers?is_active=true`);
   return await res.json();
 }
 

@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check authentication before initializing the page
     if (isLoggedIn()) {
         initNavbar();
-        new TimerWidget();
     } else {
         logout();
     }

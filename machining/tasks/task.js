@@ -3,16 +3,11 @@ import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { proxyBase, backendBase } from '../../base.js';
 import { initNavbar } from '../../components/navbar.js';
 import { authedFetch, isLoggedIn, logout } from '../../authService.js';
+import { TimerWidget } from '../../components/timerWidget.js';
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-function refreshTimerWidget() {
-    if (window.timerWidget?.loadActiveTimers) {
-        window.timerWidget.loadActiveTimers();
-    }
-}
 
 function getTaskKeyFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -109,7 +104,7 @@ async function fetchTaskDetails(taskKey) {
 }
 
 async function getActiveTimer(taskKey) {
-    const response = await authedFetch(`${backendBase}/machining/timers?issue_key=${taskKey}&active=true`);
+    const response = await authedFetch(`${backendBase}/machining/timers?issue_key=${taskKey}&is_active=true`);
     
     if (!response.ok) {
         return null;
@@ -136,6 +131,85 @@ async function startTimer() {
     });
     
     return response.json();
+}
+
+function createManualTimeModal() {
+    const modal = document.createElement('div');
+    modal.className = 'manual-time-modal';
+    
+    // Set default values to current date and time
+    const now = new Date();
+    const currentDate = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    
+    // Set end time to 1 hour later
+    const endDateTime = new Date(now.getTime() + 60 * 60 * 1000);
+    const endTimeStr = endDateTime.toTimeString().slice(0, 5);
+    
+    modal.innerHTML = `
+        <div class="manual-time-modal-content" lang="tr">
+            <div class="manual-time-modal-header">
+                <h3>Manuel Zaman Girişi</h3>
+                <button class="manual-time-close" id="manual-time-close">&times;</button>
+            </div>
+            <div class="manual-time-modal-body">
+                <div class="time-input-group">
+                    <label>Başlangıç:</label>
+                    <div class="datetime-inputs">
+                        <input type="date" id="start-date" value="${currentDate}" required>
+                        <input type="time" id="start-time" value="${currentTime}" required>
+                    </div>
+                </div>
+                <div class="time-input-group">
+                    <label>Bitiş:</label>
+                    <div class="datetime-inputs">
+                        <input type="date" id="end-date" value="${currentDate}" required>
+                        <input type="time" id="end-time" value="${endTimeStr}" required>
+                    </div>
+                </div>
+                <div class="manual-time-preview" id="time-preview">
+                    Süre: <span id="duration-preview">01:00:00</span>
+                </div>
+            </div>
+            <div class="manual-time-modal-footer">
+                <button class="btn btn-secondary" id="manual-time-cancel">İptal</button>
+                <button class="btn btn-primary" id="manual-time-submit">Kaydet</button>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners for real-time duration calculation
+    const startDate = modal.querySelector('#start-date');
+    const startTime = modal.querySelector('#start-time');
+    const endDate = modal.querySelector('#end-date');
+    const endTime = modal.querySelector('#end-time');
+    const durationPreview = modal.querySelector('#duration-preview');
+    
+    function updateDuration() {
+        try {
+            const startDateTime = new Date(`${startDate.value}T${startTime.value}`);
+            const endDateTime = new Date(`${endDate.value}T${endTime.value}`);
+            
+            if (!isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime()) && endDateTime > startDateTime) {
+                const elapsedSeconds = Math.round((endDateTime.getTime() - startDateTime.getTime()) / 1000);
+                durationPreview.textContent = formatTime(elapsedSeconds);
+            } else {
+                durationPreview.textContent = '00:00:00';
+            }
+        } catch (error) {
+            durationPreview.textContent = '00:00:00';
+        }
+    }
+    
+    startDate.addEventListener('change', updateDuration);
+    startTime.addEventListener('change', updateDuration);
+    endDate.addEventListener('change', updateDuration);
+    endTime.addEventListener('change', updateDuration);
+    
+    // Initial calculation
+    updateDuration();
+    
+    return modal;
 }
 
 async function logManualTime() {
@@ -194,7 +268,7 @@ async function logManualTime() {
                 submitBtn.textContent = 'Kaydediliyor...';
                 
                 // Create timer in database
-                const timerResponse = await authedFetch(`${backendBase}/machining/manual-entry`, {
+                const timerResponse = await authedFetch(`${backendBase}/machining/manual-time/`, {
                     method: 'POST',
                     body: JSON.stringify({
                         issue_key: state.currentIssueKey,
@@ -239,7 +313,6 @@ async function logManualTime() {
                 
                 if (jiraResponse.ok) {
                     alert(`Manuel zaman girişi başarılı: ${formatTime(elapsedSeconds)}`);
-                    refreshTimerWidget();
                     window.location.reload();
                 } else {
                     alert("Jira'ya kayıt yapılırken hata oluştu.");
@@ -292,6 +365,7 @@ function setupStartStopHandler() {
     
     startBtn.onclick = async () => {
         if (!state.timerActive) {
+            await syncServerTime();
             // Start timer
             state.startTime = getSyncedNow();
             state.timerActive = true;
@@ -302,7 +376,6 @@ function setupStartStopHandler() {
             try {
                 const startData = await startTimer();
                 state.currentTimerId = startData.id;
-                refreshTimerWidget();
             } catch (error) {
                 console.error('Error starting timer:', error);
                 alert("Zamanlayıcı başlatılırken hata oluştu.");
@@ -324,7 +397,6 @@ function setupStartStopHandler() {
                 const logged = await logTimeToJiraShared({ issueKey: state.currentIssueKey, baseUrl: state.base, startTime: state.startTime, elapsedSeconds: elapsed });
                 
                 if (logged) {
-                    refreshTimerWidget();
                     window.location.reload();
                 } else {
                     alert("Hata oluştu. Lütfen tekrar deneyin.");
@@ -336,6 +408,7 @@ function setupStartStopHandler() {
                 setInactiveTimerUI();
             }
         }
+        new TimerWidget();
     };
 }
 
@@ -348,7 +421,6 @@ function setupStopOnlyHandler() {
         
         try {
             await stopTimerShared({ timerId: state.currentTimerId, finishTime: getSyncedNow(), syncToJira: false });
-            refreshTimerWidget();
             window.location.reload();
         } catch (error) {
             console.error('Error stopping timer:', error);
@@ -384,7 +456,7 @@ function setupMarkDoneHandler() {
     const { doneBtn } = getUIElements();
     
     doneBtn.onclick = async () => {
-        if (!confirm("Bu işi tamamlandı olarak işaretlemek istediğinize emin misiniz?")) {
+        if (!confirm(`${state.selectedIssue.customfield_10187} adetin hepsini tamamladınız mı?`)) {
             return;
         }
         
@@ -439,7 +511,7 @@ async function initializeTaskView() {
         return;
     }
     initNavbar();
-    await syncServerTime();
+    new TimerWidget();
     
     const taskKey = getTaskKeyFromURL();
     if (!taskKey) {
@@ -450,8 +522,8 @@ async function initializeTaskView() {
     try {
         // Check for active timer
         const activeTimer = await getActiveTimer(taskKey);
-        console.log(activeTimer);
         if (activeTimer) {
+            await syncServerTime();
             // Load active timer state from database
             state.currentIssueKey = activeTimer.issue_key;
             state.currentTimerId = activeTimer.id;
@@ -467,8 +539,6 @@ async function initializeTaskView() {
             
             setupTaskInfoDisplay();
             setupTimerHandlers(true);
-            refreshTimerWidget();
-            console.log('Active timer loaded for task:', taskKey, activeTimer.id);
         } else {
             // No active timer, so we proceed to load task details
             let issue;

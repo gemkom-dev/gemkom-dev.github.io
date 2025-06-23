@@ -1,17 +1,7 @@
 // --- machiningView.js ---
 import {
-  state,
-  formatTime,
-  formatJiraDate,
-  saveTimerState
+  state
 } from './machiningService.js';
-
-import {
-  proxyBase,
-  backendBase
-} from '../base.js';
-
-import { syncServerTime, getSyncedNow } from '../timeService.js';
 
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');

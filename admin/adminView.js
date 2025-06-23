@@ -12,7 +12,7 @@ export async function updateActiveTimers() {
     state.activeTimers.filter(t => !t.finish_time).forEach(t => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${t.user_id}</td>
+            <td>${t.user.username}</td>
             <td>${t.machine}</td>
             <td>${t.issue_key}</td>
             <td id="timer-${t.id}">${formatDuration(t.start_time)}</td>

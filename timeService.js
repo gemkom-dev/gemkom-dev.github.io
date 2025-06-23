@@ -13,7 +13,6 @@ export async function syncServerTime() {
     const serverTime = data.now;
     const clientTime = Date.now();
     serverTimeOffset = serverTime - clientTime;
-    console.log(`Time synchronized. Offset: ${serverTimeOffset}ms`);
   } catch (error) {
     console.error('Failed to sync server time, using client time.', error);
     serverTimeOffset = 0;
