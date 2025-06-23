@@ -12,9 +12,9 @@ export async function updateActiveTimers() {
     state.activeTimers.filter(t => !t.finish_time).forEach(t => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${t.user.username}</td>
+            <td>${t.username}</td>
             <td>${t.machine}</td>
-            <td>${t.issue_key}</td>
+            <td><a href="https://gemkom-1.atlassian.net/browse/${t.issue_key}" target="_blank">${t.issue_key}</a></td>
             <td id="timer-${t.id}">${formatDuration(t.start_time)}</td>
             <td>
                 <button class="btn btn-success btn-sm save-jira" data-timer-id="${t.id}">Jira'ya Kaydet</button>

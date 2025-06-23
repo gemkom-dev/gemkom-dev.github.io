@@ -5,7 +5,7 @@ import { TimerWidget } from './components/timerWidget.js';
 document.addEventListener('DOMContentLoaded', async () => {
     if (isLoggedIn()) {
         initNavbar();
-        new TimerWidget();();
+        new TimerWidget();
 
     } else {
         // If not on the login page, redirect to login

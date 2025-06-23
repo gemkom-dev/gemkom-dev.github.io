@@ -100,3 +100,36 @@ th {
     background: #f4f6f8;
     font-weight: 600;
 }
+
+#admin-flex-layout {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+}
+#sidebar-root {
+    width: 200px;
+    min-width: 200px;
+    transition: width 0.2s, min-width 0.2s;
+}
+.app-sidebar.closed + #sidebar-root,
+#sidebar-root.closed {
+    width: 48px;
+    min-width: 48px;
+}
+.admin-main-content {
+    flex: 1 1 0%;
+    min-width: 0;
+    transition: margin-left 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+@media (max-width: 767.98px) {
+    #admin-flex-layout {
+        flex-direction: column;
+    }
+    #sidebar-root, .admin-main-content {
+        width: 100vw;
+        min-width: 0;
+    }
+}
+
