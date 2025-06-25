@@ -106,16 +106,7 @@ th {
     flex-direction: row;
     min-height: 100vh;
 }
-#sidebar-root {
-    width: 200px;
-    min-width: 200px;
-    transition: width 0.2s, min-width 0.2s;
-}
-.app-sidebar.closed + #sidebar-root,
-#sidebar-root.closed {
-    width: 48px;
-    min-width: 48px;
-}
+
 .admin-main-content {
     flex: 1 1 0%;
     min-width: 0;
