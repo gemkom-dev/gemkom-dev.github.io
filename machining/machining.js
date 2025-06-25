@@ -13,7 +13,7 @@ import {
 import { filters } from '../globalVariables.js';
 
 import { initNavbar } from '../components/navbar.js';
-import { isLoggedIn, logout } from '../authService.js';
+import { enforceAuth } from '../authService.js';
 import { TimerWidget } from '../components/timerWidget.js';
 
 async function loadAndRender(filterId) {
@@ -24,11 +24,9 @@ async function loadAndRender(filterId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!isLoggedIn()) {
-        logout();
+    if (!enforceAuth()) {
         return;
     }
-    
     initNavbar();
     new TimerWidget();
   

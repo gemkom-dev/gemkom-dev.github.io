@@ -1,5 +1,5 @@
 // login/login.js
-import { login, isLoggedIn, fetchUsers } from '../authService.js';
+import { login, fetchUsers, mustResetPassword, isLoggedIn } from '../authService.js';
 
 function populateUserSelect(users) {
     const userSelect = document.getElementById('user-select');
@@ -15,8 +15,11 @@ function populateUserSelect(users) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     // If already logged in, redirect to the main page
-    if (isLoggedIn()) {
+    if (isLoggedIn() && !mustResetPassword()) {
         window.location.href = '/';
+        return;
+    } else if (mustResetPassword()) {
+        window.location.href = '/login/reset-password';
         return;
     }
 
@@ -60,7 +63,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             await login(username, password);
-            window.location.href = '/';
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (user.must_reset_password){
+                window.location.href = '/login/reset-password';
+            } else {
+                window.location.href = '/';
+            }
         } catch (error) {
             errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';
             errorMessage.style.display = 'block';

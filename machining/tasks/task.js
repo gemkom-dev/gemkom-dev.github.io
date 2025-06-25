@@ -2,7 +2,7 @@ import { state, restoreTimerState, formatTime, formatJiraDate, saveTimerState, s
 import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { proxyBase, backendBase } from '../../base.js';
 import { initNavbar } from '../../components/navbar.js';
-import { authedFetch, isLoggedIn, logout } from '../../authService.js';
+import { authedFetch, enforceAuth } from '../../authService.js';
 import { TimerWidget } from '../../components/timerWidget.js';
 
 // ============================================================================
@@ -506,8 +506,7 @@ function setupTimerHandlers(restoring = false) {
 // ============================================================================
 
 async function initializeTaskView() {
-    if (!isLoggedIn()) {
-        logout();
+    if (!enforceAuth()) {
         return;
     }
     initNavbar();

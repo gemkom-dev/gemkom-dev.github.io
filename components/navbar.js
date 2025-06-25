@@ -1,4 +1,4 @@
-import { logout } from '../authService.js';
+import { logout, isAdmin, isLoggedIn } from '../authService.js';
 
 // Navbar component
 export function createNavbar() {
@@ -60,11 +60,12 @@ export function createNavbar() {
         });
     });
 
-    // Show admin tab if user is admin
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    // Show admin tab if user is admin (sync)
     const adminTab = navbar.querySelector('.admin-only');
-    if (isAdmin) {
+    if (isAdmin()) {
         adminTab.style.display = 'block';
+    } else {
+        adminTab.style.display = 'none';
     }
 
     return navbar;
@@ -73,7 +74,9 @@ export function createNavbar() {
 // Function to initialize navbar
 export function initNavbar() {
     const navbarContainer = document.getElementById('navbar-container');
-    if (!navbarContainer) return;
+    if (!navbarContainer) {
+      return;
+    }
 
     const navHTML = `
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -92,7 +95,7 @@ export function initNavbar() {
                         <li class="nav-item">
                             <a class="nav-link" href="/maintenance">Bakım</a>
                         </li>
-                        <li class="nav-item">
+                        <li class="nav-item admin-only" style="display: none;">
                             <a class="nav-link" href="/admin">Admin</a>
                         </li>
                     </ul>
@@ -122,6 +125,14 @@ export function initNavbar() {
             link.classList.add('active');
         }
     });
+
+    // Show admin tab if user is admin (sync)
+    const adminTab = navbarContainer.querySelector('.admin-only');
+    if (isAdmin()) {
+        adminTab.style.display = 'block';
+    } else {
+        adminTab.style.display = 'none';
+    }
 }
 
 export function setupLogoutButton() {

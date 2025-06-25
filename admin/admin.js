@@ -2,8 +2,9 @@ import { updateActiveTimers, updateMachines } from './adminView.js';
 import { filters } from '../globalVariables.js';
 import { initNavbar } from '../components/navbar.js';
 import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
-import { isLoggedIn, logout } from '../authService.js';
 import Sidebar from '../components/sidebar.js';
+import { enforceAuth, isAdmin } from '../authService.js';
+import { showUserCreateForm } from './createUser.js';
 
 export const state = {
     machines: filters,
@@ -11,12 +12,15 @@ export const state = {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication before initializing the page
-    if (isLoggedIn()) {
-        initNavbar();
-    } else {
-        logout();
+    if (!isAdmin()) {
+        window.location.href = '/';
+        return;
     }
+    // Check authentication before initializing the page
+    if (!enforceAuth()) {
+        return;
+    }
+    initNavbar();
 
     document.getElementById('refresh-btn').addEventListener('click', async () => {
         await updateActiveTimers();
@@ -30,10 +34,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarRoot = document.getElementById('sidebar-root');
     if (sidebarRoot) {
         const sidebar = new Sidebar(sidebarRoot);
-        sidebar.addItem('Dashboard');
-        sidebar.addItem('Users', { subItems: ['Add User', 'User List'] });
-        sidebar.addItem('Machines', { subItems: ['Add Machine', 'Machine List'] });
-        sidebar.addItem('Settings');
+        sidebar.addItem('Özet');
+        sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi'] });
+        sidebar.addItem('Mesailer', { subItems: ['Makine Ekle', 'Machine Listesi'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Makine Ekle', 'Machine Listesi'] });
+        sidebar.addItem('Kaynaklı İmalat', { subItems: ['Makine Ekle', 'Machine Listesi'] });
+        sidebar.addItem('CNC Kesim', { subItems: ['Makine Ekle', 'Machine Listesi'] });  
+        sidebar.addItem('Ayarlar');
+
+        const kullaniciEkleItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Kullanıcı Ekle');
+        if (kullaniciEkleItem) {
+            kullaniciEkleItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showUserCreateForm();
+            });
+        }
     }
 });
 

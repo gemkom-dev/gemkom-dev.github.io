@@ -15,10 +15,4 @@ export const filters = [
   { id: '10695', name: 'Toyoda Yatay' },
 ];
 
-export function isLoggedIn() {
-  return localStorage.getItem('userId');
-}
 
-export function isAdmin() {
-  return localStorage.getItem('isAdmin') === 'true';
-}

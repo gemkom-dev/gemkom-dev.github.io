@@ -5,6 +5,11 @@ const API_URL = backendBase;
 let accessToken = localStorage.getItem('accessToken');
 let refreshToken = localStorage.getItem('refreshToken');
 
+async function getUser() {
+    const user_data = await authedFetch(`${backendBase}/users/me/`);
+    return await user_data.json();
+}
+
 function setTokens(newAccessToken, newRefreshToken) {
     accessToken = newAccessToken;
     refreshToken = newRefreshToken;
@@ -34,6 +39,7 @@ export async function login(username, password) {
 
     const data = await response.json();
     setTokens(data.access, data.refresh);
+    localStorage.setItem('user', JSON.stringify(await getUser()));
     return data;
 }
 
@@ -44,6 +50,20 @@ export function logout() {
 
 export function isLoggedIn() {
     return !!localStorage.getItem('refreshToken');
+}
+
+export function mustResetPassword() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    return user.must_reset_password;
+}
+
+export function isAdmin() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {      
+        return user?.is_superuser || user?.is_admin;
+    } else {
+        return false;
+    }
 }
 
 async function refreshAccessToken() {
@@ -107,4 +127,13 @@ export async function fetchUsers() {
         console.error('Failed to fetch users:', error);
         return [];
     }
-} 
+}
+
+export function enforceAuth() {
+    if (!isLoggedIn() || mustResetPassword()) {
+        logout();
+        return false;
+    }
+    document.body.classList.remove('pre-auth');
+    return true;
+}

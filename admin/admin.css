@@ -124,3 +124,16 @@ th {
     }
 }
 
+.user-create-form .card {
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+@media (max-width: 600px) {
+    .user-create-form .card {
+        margin: 0 0.5rem;
+    }
+    .user-create-form .card-body {
+        padding: 1rem;
+    }
+}
+
