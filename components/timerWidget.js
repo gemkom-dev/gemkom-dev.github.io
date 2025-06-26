@@ -5,6 +5,7 @@ import { syncServerTime, getSyncedNow } from '../timeService.js';
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
 import { enforceAuth } from '../authService.js';
+import { isAdmin } from '../authService.js';
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
 </button> */ //STOP BUTTON FOR FUTURE USE
@@ -274,15 +275,4 @@ export class TimerWidget {
         }
     }
 }
-
-
-// Initialize timer widget when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Only show timer widget if user is logged in and not on login page
-    if (!enforceAuth() || isAdmin()) {
-        return;
-    }
-    window.timerWidget = new TimerWidget();
-
-});
  

@@ -136,15 +136,16 @@ export async function fetchUsers() {
 }
 
 export function enforceAuth() {
-    if (mustResetPassword()) {
-        window.location.href = '/reset-password/';
-        return false;
-    } else if (!isLoggedIn()) {
-        window.location.href = '/login/';
-        return false;
-    } else if (!isAdmin()) {
-        new TimerWidget();
-    }
+    // if (!isLoggedIn()) {
+    //     window.location.href = '/login';
+    //     return false;
+    // }
+    // else if (mustResetPassword()) {
+    //     window.location.href = '/reset-password';
+    //     return false;
+    // } else if (!isAdmin()) {
+    //     new TimerWidget();
+    // }
     document.body.classList.remove('pre-auth');
     return true;
 }

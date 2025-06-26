@@ -7,4 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     initNavbar();
+    if (!isAdmin()) {
+        window.timerWidget = new TimerWidget();
+    }
 });

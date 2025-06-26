@@ -2,6 +2,7 @@
 import {
   state
 } from './machiningService.js';
+import { fetchMachines } from './machiningService.js';
 
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');
