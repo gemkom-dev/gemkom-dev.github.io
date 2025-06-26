@@ -7,5 +7,4 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     initNavbar();
-    new TimerWidget();
 });

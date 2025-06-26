@@ -4,7 +4,7 @@ import { authedFetch } from '../authService.js';
 export async function showUserCreateForm() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
     if (!mainContent) return;
-    mainContent.innerHTML = `<div class="row justify-content-center user-create-form"><div class="col-12 col-md-8 col-lg-6"><div class="card"><div class="card-header"><h5 class="mb-0">Kullanıcı Ekle</h5></div><div class="card-body"><form id="user-create-form"><div class="mb-3"><label for="username" class="form-label">Kullanıcı Adı</label><input type="text" class="form-control" id="username" required></div><div class="mb-3"><label for="team" class="form-label">Takım</label><select class="form-select" id="team" required><option value="">Takım seçiniz...</option></select></div><button type="submit" class="btn btn-primary w-100">Oluştur</button><div id="user-create-error" class="text-danger mt-2" style="display:none;"></div><div id="user-create-success" class="text-success mt-2" style="display:none;"></div></form></div></div></div></div>`;
+    mainContent.innerHTML = `<div class="row justify-content-center user-create-form"><div class="col-12 col-md-8 col-lg-6"><div class="card"><div class="card-header"><h5 class="mb-0">Kullanıcı Ekle</h5></div><div class="card-body"><form id="user-create-form"><div class="mb-3"><label for="username" class="form-label">Kullanıcı Adı</label><input type="text" class="form-control" id="username" required></div><div class="mb-3"><label for="team" class="form-label">Takım</label><select class="form-select" id="team" required><option value="">Takım seçiniz...</option></select></div><button type="submit" class="btn btn-primary w-100" style="background-color: #cc0000; border-color: #cc0000;">Oluştur</button><div id="user-create-error" class="text-danger mt-2" style="display:none;"></div><div id="user-create-success" class="text-success mt-2" style="display:none;"></div></form></div></div></div></div>`;
     // Fetch teams
     try {
         const res = await authedFetch(`${backendBase}/users/teams/`);
@@ -53,4 +53,22 @@ export async function showUserCreateForm() {
             errorDiv.style.display = 'block';
         }
     });
+}
+
+export async function fetchUsers() {
+    const mainContent = document.querySelector('.admin-main-content .container-fluid');
+    if (!mainContent) return;
+    mainContent.innerHTML = `<div class="row justify-content-center user-list"><div class="col-12 col-md-10"><div class="card"><div class="card-header"><h5 class="mb-0">Kullanıcı Listesi</h5></div><div class="card-body"><div id="user-list-table-container">Yükleniyor...</div></div></div></div></div>`;
+    try {
+        const res = await authedFetch(`${backendBase}/users/`);
+        if (res.ok) {
+            const users = await res.json();
+            const tableHtml = `<table class="table table-bordered"><thead><tr><th>Kullanıcı Adı</th><th>Admin mi?</th><th>Takım</th></tr></thead><tbody>${users.map(user => `<tr><td>${user.username}</td><td>${user.is_admin ? 'Evet' : 'Hayır'}</td><td>${user.team || ''}</td></tr>`).join('')}</tbody></table>`;
+            document.getElementById('user-list-table-container').innerHTML = tableHtml;
+        } else {
+            document.getElementById('user-list-table-container').innerHTML = 'Kullanıcılar yüklenemedi.';
+        }
+    } catch (err) {
+        document.getElementById('user-list-table-container').innerHTML = 'Bir hata oluştu.';
+    }
 } 
