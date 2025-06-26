@@ -136,3 +136,8 @@ export async function logTimeToJiraShared({ issueKey, baseUrl, startTime, elapse
     });
     return response.ok;
 }
+
+export const fetchMachines = async () => {
+  const res = await authedFetch(`${backendBase}/machines?used_in=machining`);
+  return await res.json();
+}

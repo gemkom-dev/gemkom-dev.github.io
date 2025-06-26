@@ -1,13 +1,16 @@
-import { updateActiveTimers, updateMachines } from './adminView.js';
-import { filters } from '../globalVariables.js';
 import { initNavbar } from '../components/navbar.js';
-import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
 import Sidebar from '../components/sidebar.js';
 import { enforceAuth, isAdmin } from '../authService.js';
 import { showUserCreateForm } from './createUser.js';
+import { showUserList } from './listUsers.js';
+import { showMesaiTalebiForm } from './mesaiTalebi.js';
+import { showMachiningLiveReport } from './machiningReport.js';
+import { showMachineList } from './machineList.js';
+import { fetchMachines } from '../machining/machiningService.js';
+import { showJiraSettings } from './jiraSettings.js';
 
 export const state = {
-    machines: filters,
+    machines: [],
     activeTimers: []
 }
 
@@ -21,26 +24,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     initNavbar();
-
-    document.getElementById('refresh-btn').addEventListener('click', async () => {
-        await updateActiveTimers();
-        updateMachines();
-    });
-
-    await updateActiveTimers();
-    updateMachines();
-    setupEventListeners();
+    const machines = await fetchMachines();
+    state.machines = machines;
+    // On page load, show a welcome or blank page
+    const mainContent = document.querySelector('.admin-main-content .container-fluid');
+    if (mainContent) {
+        mainContent.innerHTML = `<div class="row"><div class="col-12 text-center mt-5"><h3>Yönetim Paneline Hoşgeldiniz</h3></div></div>`;
+    }
 
     const sidebarRoot = document.getElementById('sidebar-root');
     if (sidebarRoot) {
         const sidebar = new Sidebar(sidebarRoot);
         sidebar.addItem('Özet');
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi'] });
-        sidebar.addItem('Mesailer', { subItems: ['Makine Ekle', 'Machine Listesi'] });
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Makine Ekle', 'Machine Listesi'] });
-        sidebar.addItem('Kaynaklı İmalat', { subItems: ['Makine Ekle', 'Machine Listesi'] });
+        sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Canlı Takip', 'Makine Listesi'] });
+        sidebar.addItem('Kaynaklı İmalat', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('CNC Kesim', { subItems: ['Makine Ekle', 'Machine Listesi'] });  
-        sidebar.addItem('Ayarlar');
+        sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
 
         const kullaniciEkleItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Kullanıcı Ekle');
         if (kullaniciEkleItem) {
@@ -49,62 +50,48 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showUserCreateForm();
             });
         }
+
+        const mesaiTalebiGonderItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Mesai Talebi Gönder');
+        if (mesaiTalebiGonderItem) {
+            mesaiTalebiGonderItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showMesaiTalebiForm();
+            });
+        }
+
+        const kullaniciListesiItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Kullanıcı Listesi');
+        if (kullaniciListesiItem) {
+            kullaniciListesiItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showUserList();
+            });
+        }
+
+        // Add event for Talaşlı İmalat > Canlı Takip
+        const canliTakipItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Canlı Takip');
+        if (canliTakipItem) {
+            canliTakipItem.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                showMachiningLiveReport();
+            });
+        }
+
+        // Add event for Talaşlı İmalat > Makine Listesi
+        const makinaListesiItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Makine Listesi');
+        if (makinaListesiItem) {
+            makinaListesiItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showMachineList();
+            });
+        }
+
+        // Add event for Ayarlar > Jira Ayarları
+        const jiraAyarItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Jira Ayarları');
+        if (jiraAyarItem) {
+            jiraAyarItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showJiraSettings();
+            });
+        }
     }
 });
-
-function setupEventListeners() {
-    const tbody = document.getElementById('active-timers');
-    tbody.addEventListener('click', async (e) => {
-        const jiraBtn = e.target.closest('.save-jira');
-        const stopBtn = e.target.closest('.stop-only');
-        if (jiraBtn) {
-            const timerId = jiraBtn.getAttribute('data-timer-id');
-            // Call logic to save to Jira and stop timer
-            await handleSaveToJira(timerId);
-        } else if (stopBtn) {
-            const timerId = stopBtn.getAttribute('data-timer-id');
-            // Call logic to just stop and save to DB
-            await handleStopOnly(timerId);
-        }
-    });
-}
-
-async function handleSaveToJira(timerId) {
-    // Find timer info from state
-    const timer = state.activeTimers.find(t => t.id == timerId);
-    if (!timer) {
-      return alert('Timer bulunamadı!');
-    }
- 
-    const finishTime = Date.now();
-    // 1. Stop timer with syncToJira=true
-    const stopped = await stopTimerShared({ timerId, finishTime, syncToJira: true });
-    if (!stopped) {
-      return alert('Timer durdurulamadı!');
-    }
-    // 2. Log to Jira
-    let elapsedSeconds = Math.round((finishTime - timer.start_time) / 1000);
-    elapsedSeconds = Math.max(elapsedSeconds, 60)
-
-    const logged = await logTimeToJiraShared({ issueKey: timer.issue_key, baseUrl: 'https://gemkom-1.atlassian.net', startTime: timer.start_time, elapsedSeconds });
-    if (logged) {
-        alert(`Timer ${timerId} Jira'ya kaydedildi ve durduruldu!`);
-    } else {
-        alert('Jira kaydı başarısız!');
-    }
-
-    await updateActiveTimers();
-    await updateMachines();
-}
-
-async function handleStopOnly(timerId) {
-    const finishTime = Date.now();
-    // Stop timer with syncToJira=false
-    const stopped = await stopTimerShared({ timerId, finishTime, syncToJira: false });
-    if (stopped) {
-        alert(`Timer ${timerId} sadece durduruldu ve veritabanına kaydedildi!`);
-    } else {
-        alert('Timer durdurulamadı!');
-    }
-    await updateActiveTimers();
-}
