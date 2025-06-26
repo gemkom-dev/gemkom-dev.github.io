@@ -39,7 +39,9 @@ export async function login(username, password) {
 
     const data = await response.json();
     setTokens(data.access, data.refresh);
-    localStorage.setItem('user', JSON.stringify(await getUser()));
+    const user_data = await getUser();
+    console.log(user_data);
+    localStorage.setItem('user', JSON.stringify(user_data));
     return data;
 }
 
@@ -54,7 +56,11 @@ export function isLoggedIn() {
 
 export function mustResetPassword() {
     const user = JSON.parse(localStorage.getItem('user'));
-    return user.must_reset_password;
+    if (user) {
+        return user.must_reset_password;
+    } else {
+        return false;
+    }
 }
 
 export function isAdmin() {
@@ -130,8 +136,11 @@ export async function fetchUsers() {
 }
 
 export function enforceAuth() {
-    if (!isLoggedIn() || mustResetPassword()) {
-        logout();
+    if (mustResetPassword()) {
+        window.location.href = '/reset-password/';
+        return false;
+    } else if (!isLoggedIn()) {
+        window.location.href = '/login/';
         return false;
     }
     document.body.classList.remove('pre-auth');
