@@ -45,13 +45,13 @@ export function renderTaskList(issues, openTimerCallback) {
   });
 }
 
-export async function setupMachineFilters(onClick) {
+export function setupMachineFilters(filters, onClick) {
   const select = document.getElementById('filter-select');
   select.innerHTML = '<option value="">Seçiniz...</option>'; // Reset options with placeholder
-  const machines = await fetchMachines();
-  machines.forEach(f => {
+
+  filters.forEach(f => {
     const option = document.createElement('option');
-    option.value = f.jira_id;
+    option.value = f.id;
     option.textContent = f.name;
     select.appendChild(option);
   });

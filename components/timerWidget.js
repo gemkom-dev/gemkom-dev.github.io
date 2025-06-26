@@ -279,7 +279,7 @@ export class TimerWidget {
 // Initialize timer widget when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Only show timer widget if user is logged in and not on login page
-    if (!enforceAuth() || isAdmin()) {
+    if (!enforceAuth()) {
         return;
     }
     window.timerWidget = new TimerWidget();

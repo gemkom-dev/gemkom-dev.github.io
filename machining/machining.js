@@ -10,8 +10,11 @@ import {
   setupSearchInput
 } from './machiningView.js';
 
+import { filters } from '../globalVariables.js';
+
 import { initNavbar } from '../components/navbar.js';
 import { enforceAuth } from '../authService.js';
+import { TimerWidget } from '../components/timerWidget.js';
 
 async function loadAndRender(filterId) {
   const issues = await fetchIssuesByFilter(filterId);
@@ -25,10 +28,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
     initNavbar();
+    new TimerWidget();
   
     // Check if we have a task parameter
   const urlParams = new URLSearchParams(window.location.search);
   
-  await setupMachineFilters(loadAndRender);
+  setupMachineFilters(filters, loadAndRender);
   setupSearchInput();
 });

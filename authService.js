@@ -1,5 +1,4 @@
 import { backendBase } from './base.js';
-import { TimerWidget } from './components/timerWidget.js';
 
 const API_URL = backendBase;
 
@@ -41,6 +40,7 @@ export async function login(username, password) {
     const data = await response.json();
     setTokens(data.access, data.refresh);
     const user_data = await getUser();
+    console.log(user_data);
     localStorage.setItem('user', JSON.stringify(user_data));
     return data;
 }
@@ -142,8 +142,6 @@ export function enforceAuth() {
     } else if (!isLoggedIn()) {
         window.location.href = '/login/';
         return false;
-    } else if (!isAdmin()) {
-        new TimerWidget();
     }
     document.body.classList.remove('pre-auth');
     return true;

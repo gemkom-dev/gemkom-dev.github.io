@@ -510,6 +510,7 @@ async function initializeTaskView() {
         return;
     }
     initNavbar();
+    new TimerWidget();
     
     const taskKey = getTaskKeyFromURL();
     if (!taskKey) {
