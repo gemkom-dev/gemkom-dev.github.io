@@ -19,7 +19,6 @@ export async function showUserList() {
     `;
     try {
         const users = await fetchUsers();
-        console.log(users);
         const tableHtml = `
             <table class="table table-bordered">
                 <thead>

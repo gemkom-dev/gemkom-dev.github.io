@@ -1,5 +1,5 @@
-import { backendBase } from '../base.js';
-import { authedFetch } from '../authService.js';
+import { fetchMachinesForMachining } from "../machining/machiningService.js";
+import { state } from "./admin.js";
 
 export async function showMachineList() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
@@ -31,43 +31,41 @@ export async function showMachineList() {
         </div>
     `;
     try {
-        const res = await authedFetch(`${backendBase}/machines?used_in=machining`);
-        if (res.ok) {
-            const machines = await res.json();
-            const tableHtml = `
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Makine Adı</th>
-                            <th>Makine Tipi</th>
-                            <th>Özellikler</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${machines.map(machine => `
-                            <tr>
-                                <td><strong>${machine.name || ''}</strong></td>
-                                <td>${machine.machine_type_label || ''}</td>
-                                <td>
-                                    ${machine.properties && typeof machine.properties === 'object' ? `
-                                        <table class="table table-sm mb-0 machine-properties-table">
-                                            <tbody>
-                                                ${Object.entries(machine.properties).map(([key, value]) => `
-                                                    <tr><td class="key-cell">${key}</td><td class="value-cell">${renderPropertyValue(value)}</td></tr>
-                                                `).join('')}
-                                            </tbody>
-                                        </table>
-                                    ` : ''}
-                                </td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            document.getElementById('machine-list-table-container').innerHTML = tableHtml;
-        } else {
-            document.getElementById('machine-list-table-container').innerHTML = 'Makineler yüklenemedi.';
+        if (state.machines.length === 0){
+            state.machines = await fetchMachinesForMachining();
         }
+        const machines = state.machines;
+        const tableHtml = `
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Makine Adı</th>
+                        <th>Makine Tipi</th>
+                        <th>Özellikler</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${machines.map(machine => `
+                        <tr>
+                            <td><strong>${machine.name || ''}</strong></td>
+                            <td>${machine.machine_type_label || ''}</td>
+                            <td>
+                                ${machine.properties && typeof machine.properties === 'object' ? `
+                                    <table class="table table-sm mb-0 machine-properties-table">
+                                        <tbody>
+                                            ${Object.entries(machine.properties).map(([key, value]) => `
+                                                <tr><td class="key-cell">${key}</td><td class="value-cell">${renderPropertyValue(value)}</td></tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        document.getElementById('machine-list-table-container').innerHTML = tableHtml;
     } catch (err) {
         document.getElementById('machine-list-table-container').innerHTML = 'Bir hata oluştu.';
     }

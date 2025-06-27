@@ -48,8 +48,7 @@ export async function fetchIssuesByFilter(filterId) {
     const encodedJql = encodeURIComponent(jql);
     
     const url = `${state.base}/rest/api/3/search?jql=${encodedJql}&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411`;
-    const testBase = 'https://falling-bread-330e.ocalik.workers.dev/?url=';
-    const res = await fetch(proxyBase + encodeURIComponent(url), {
+    const res = await authedFetch(proxyBase + encodeURIComponent(url), {
         headers: { 'Content-Type': 'application/json' }
     });
     const data = await res.json();
@@ -74,7 +73,7 @@ export function restoreTimerState(callback) {
     const { startTime, issueKey } = JSON.parse(saved);
     state.startTime = startTime;
     state.currentIssueKey = issueKey;
-    fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${issueKey}`))
+    authedFetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${issueKey}`))
       .then(res => res.json())
       .then(issue => callback(issue, true));
   }
@@ -137,7 +136,7 @@ export async function logTimeToJiraShared({ issueKey, baseUrl, startTime, elapse
     return response.ok;
 }
 
-export const fetchMachines = async () => {
+export const fetchMachinesForMachining = async () => {
   const res = await authedFetch(`${backendBase}/machines?used_in=machining`);
   return await res.json();
 }

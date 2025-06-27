@@ -1,12 +1,11 @@
 import { backendBase } from './base.js';
-import { TimerWidget } from './components/timerWidget.js';
 
 const API_URL = backendBase;
 
 let accessToken = localStorage.getItem('accessToken');
 let refreshToken = localStorage.getItem('refreshToken');
 
-async function getUser() {
+export async function getUser() {
     const user_data = await authedFetch(`${backendBase}/users/me/`);
     return await user_data.json();
 }
@@ -65,7 +64,7 @@ export function mustResetPassword() {
 
 export function isAdmin() {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {      
+    if (user) { 
         return user?.is_superuser || user?.is_admin;
     } else {
         return false;
@@ -136,16 +135,14 @@ export async function fetchUsers() {
 }
 
 export function enforceAuth() {
-    // if (!isLoggedIn()) {
-    //     window.location.href = '/login';
-    //     return false;
-    // }
-    // else if (mustResetPassword()) {
-    //     window.location.href = '/reset-password';
-    //     return false;
-    // } else if (!isAdmin()) {
-    //     new TimerWidget();
-    // }
+    if (!isLoggedIn()) {
+        window.location.href = '/login';
+        return false;
+    }
+    else if (mustResetPassword()) {
+        window.location.href = '/reset-password';
+        return false;
+    }
     document.body.classList.remove('pre-auth');
     return true;
 }

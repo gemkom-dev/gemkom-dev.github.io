@@ -1,11 +1,15 @@
 // --- adminView.js ---
 import { fetchActiveTimers, formatDuration } from './adminService.js';
 import { state } from './admin.js';
+import { getSyncedNow, syncServerTime } from '../timeService.js';
 
 let timerIntervals = {};
 
 export async function updateActiveTimers() {
     state.activeTimers = await fetchActiveTimers();
+    if (state.activeTimers.length > 0){
+        await syncServerTime();
+    }
     const tbody = document.getElementById('active-timers');
     tbody.innerHTML = '';
 
@@ -32,7 +36,7 @@ function startTimerInterval(timerId, startTime) {
       clearInterval(timerIntervals[timerId]);
     }
     function update() {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const elapsed = Math.floor((getSyncedNow() - startTime) / 1000);
         const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
         const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
         const s = (elapsed % 60).toString().padStart(2, '0');

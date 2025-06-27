@@ -1,8 +1,15 @@
 import { updateActiveTimers, updateMachines } from './adminView.js';
+import { fetchMachinesForMachining } from '../machining/machiningService.js';
+import { state } from './admin.js';
+import { getSyncedNow } from '../timeService.js';
+import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
 
 export async function showMachiningLiveReport() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
     if (!mainContent) return;
+    if (state.machines.length === 0){
+        state.machines = await fetchMachinesForMachining();
+    }
     mainContent.innerHTML = `
         <div class="d-flex justify-content-end mb-3">
             <button id="refresh-btn" class="btn btn-primary">⟳ Yenile</button>
@@ -84,15 +91,9 @@ function setupMachiningTableEventListeners() {
 }
 
 async function handleSaveToJira(timerId) {
-    // Find timer info from state (import/export state if needed)
-    const timer = window.adminState?.activeTimers?.find(t => t.id == timerId);
-    if (!timer) {
-      return alert('Timer bulunamadı!');
-    }
- 
-    const finishTime = Date.now();
+    const finishTime = getSyncedNow();
     // 1. Stop timer with syncToJira=true
-    const stopped = await window.stopTimerShared({ timerId, finishTime, syncToJira: true });
+    const stopped = await stopTimerShared({ timerId, finishTime, syncToJira: true });
     if (!stopped) {
       return alert('Timer durdurulamadı!');
     }
@@ -100,7 +101,7 @@ async function handleSaveToJira(timerId) {
     let elapsedSeconds = Math.round((finishTime - timer.start_time) / 1000);
     elapsedSeconds = Math.max(elapsedSeconds, 60)
 
-    const logged = await window.logTimeToJiraShared({ issueKey: timer.issue_key, baseUrl: 'https://gemkom-1.atlassian.net', startTime: timer.start_time, elapsedSeconds });
+    const logged = await logTimeToJiraShared({ issueKey: timer.issue_key, baseUrl: 'https://gemkom-1.atlassian.net', startTime: timer.start_time, elapsedSeconds });
     if (logged) {
         alert(`Timer ${timerId} Jira'ya kaydedildi ve durduruldu!`);
     } else {
@@ -112,13 +113,13 @@ async function handleSaveToJira(timerId) {
 }
 
 async function handleStopOnly(timerId) {
-    const finishTime = Date.now();
+    const finishTime = getSyncedNow();
     // Stop timer with syncToJira=false
-    const stopped = await window.stopTimerShared({ timerId, finishTime, syncToJira: false });
+    const stopped = await stopTimerShared({ timerId, finishTime, syncToJira: false });
     if (stopped) {
         alert(`Timer ${timerId} sadece durduruldu ve veritabanına kaydedildi!`);
     } else {
         alert('Timer durdurulamadı!');
     }
     await updateActiveTimers();
-} 
+}

@@ -1,6 +1,5 @@
 // --- machining.js ---
 import {
-  state,
   fetchIssuesByFilter
 } from './machiningService.js';
 

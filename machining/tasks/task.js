@@ -4,7 +4,6 @@ import { proxyBase, backendBase } from '../../base.js';
 import { initNavbar } from '../../components/navbar.js';
 import { authedFetch, enforceAuth } from '../../authService.js';
 import { TimerWidget } from '../../components/timerWidget.js';
-
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
@@ -291,7 +290,7 @@ async function logManualTime() {
                 const startDateStr = `${startDate} ${startTime}`;
                 const endDateStr = `${endDate} ${endTime}`;
                 
-                const jiraResponse = await fetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${state.currentIssueKey}/worklog`), {
+                const jiraResponse = await authedFetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${state.currentIssueKey}/worklog`), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

@@ -76,7 +76,6 @@ async function handleMesaiTalebiSubmit(e) {
 
         // Create sub-tasks for each row
         for (const row of rows) {
-            console.log(row);
             if (!row['İsim'] || !row['Görev'] || !row['İş Emri Numarası']) continue;
             const subTaskFields = {
                 project: { key: projectKey },

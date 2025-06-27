@@ -1,11 +1,10 @@
 // --- timerWidget.js ---
-import { state } from '../machining/machiningService.js';
 import { formatTime } from '../machining/machiningService.js';
 import { syncServerTime, getSyncedNow } from '../timeService.js';
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
-import { enforceAuth } from '../authService.js';
-import { isAdmin } from '../authService.js';
+import { state as adminState } from '../admin/admin.js';
+
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
 </button> */ //STOP BUTTON FOR FUTURE USE
@@ -30,6 +29,7 @@ export class TimerWidget {
         this.createWidget();
         this.renderTimers();
         this.startUpdateInterval();
+        this.startAdminStopPolling();
     }
 
     async ensureTimeSync() {
@@ -273,6 +273,33 @@ export class TimerWidget {
         if (window.timerWidget === this) {
             window.timerWidget = null;
         }
+    }
+
+    startAdminStopPolling() {
+        setInterval(async () => {
+            try {
+                const response = await authedFetch(`${backendBase}/machining/timers?is_active=true`);
+                if (response.ok) {
+                    const latestTimers = await response.json();
+                    // Check for any timer in this.activeTimers that is missing or finished in latestTimers
+                    for (const timer of this.activeTimers) {
+                        const latest = latestTimers.find(t => t.id === timer.id);
+                        if (!latest || latest.finish_time) {
+                            let name = 'yönetici';
+                            if (latest && (latest.stopped_by_first_name || latest.stopped_by_last_name)) {
+                                name = `${latest.stopped_by_first_name || ''} ${latest.stopped_by_last_name || ''}`.trim();
+                            }
+                            if (window.confirm(`Zamanlayıcı ${name} tarafından durduruldu. Sayfa yenilensin mi?`)) {
+                                window.location.reload();
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error polling user timers:', error);
+            }
+        }, 5000);
     }
 }
  

@@ -2,7 +2,7 @@
 import {
   state
 } from './machiningService.js';
-import { fetchMachines } from './machiningService.js';
+import { fetchMachinesForMachining } from './machiningService.js';
 
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');
@@ -49,7 +49,7 @@ export function renderTaskList(issues, openTimerCallback) {
 export async function setupMachineFilters(onClick) {
   const select = document.getElementById('filter-select');
   select.innerHTML = '<option value="">Seçiniz...</option>'; // Reset options with placeholder
-  const machines = await fetchMachines();
+  const machines = await fetchMachinesForMachining();
   machines.forEach(f => {
     const option = document.createElement('option');
     option.value = f.jira_id;

@@ -1,5 +1,6 @@
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
+import { fetchUsers } from '../authService.js';
 
 export async function showUserCreateForm() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
@@ -55,13 +56,13 @@ export async function showUserCreateForm() {
     });
 }
 
-export async function fetchUsers() {
+export async function fetchUsersList() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
     if (!mainContent) return;
     mainContent.innerHTML = `<div class="row justify-content-center user-list"><div class="col-12 col-md-10"><div class="card"><div class="card-header"><h5 class="mb-0">Kullanıcı Listesi</h5></div><div class="card-body"><div id="user-list-table-container">Yükleniyor...</div></div></div></div></div>`;
     try {
-        const res = await authedFetch(`${backendBase}/users/`);
-        if (res.ok) {
+        users = fetchUsers();
+        if (users.length > 0) {
             const users = await res.json();
             const tableHtml = `<table class="table table-bordered"><thead><tr><th>Kullanıcı Adı</th><th>Admin mi?</th><th>Takım</th></tr></thead><tbody>${users.map(user => `<tr><td>${user.username}</td><td>${user.is_admin ? 'Evet' : 'Hayır'}</td><td>${user.team || ''}</td></tr>`).join('')}</tbody></table>`;
             document.getElementById('user-list-table-container').innerHTML = tableHtml;
