@@ -1,9 +1,8 @@
 import { initNavbar } from '../components/navbar.js';
-import { enforceAuth } from '../authService.js';
-import { TimerWidget } from '../components/timerWidget.js';
+import { guardRoute } from '../authService.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!enforceAuth()) {
+    if (!guardRoute()) {
         return;
     }
     initNavbar();

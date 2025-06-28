@@ -1,13 +1,10 @@
-import { enforceAuth } from './authService.js';
+import { guardRoute } from './authService.js';
 import { initNavbar } from './components/navbar.js';
-import { TimerWidget } from './components/timerWidget.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!enforceAuth()) {
+
+    if (!guardRoute()) {
         return;
     }
     initNavbar();
-    if (!isAdmin()) {
-        window.timerWidget = new TimerWidget();
-    }
 });

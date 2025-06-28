@@ -1,5 +1,5 @@
 // login/login.js
-import { login, fetchUsers, mustResetPassword, isLoggedIn } from '../authService.js';
+import { login, fetchUsers, mustResetPassword, isLoggedIn, navigateTo, ROUTES, shouldBeOnLoginPage } from '../authService.js';
 
 function populateUserSelect(users) {
     const userSelect = document.getElementById('user-select');
@@ -14,12 +14,9 @@ function populateUserSelect(users) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // If already logged in, redirect to the main page
-    if (isLoggedIn() && !mustResetPassword()) {
-        window.location.href = '/';
-        return;
-    } else if (mustResetPassword()) {
-        window.location.href = '/login/reset-password';
+    // Check if user should be on this page
+    if (!shouldBeOnLoginPage()) {
+        navigateTo(ROUTES.HOME);
         return;
     }
 
@@ -65,9 +62,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             await login(username, password);
             const user = JSON.parse(localStorage.getItem('user'));
             if (user.must_reset_password){
-                window.location.href = '/login/reset-password';
+                navigateTo(ROUTES.RESET_PASSWORD);
             } else {
-                window.location.href = '/';
+                navigateTo(ROUTES.HOME);
             }
         } catch (error) {
             errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';

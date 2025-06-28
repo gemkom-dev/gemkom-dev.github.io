@@ -5,6 +5,20 @@ const API_URL = backendBase;
 let accessToken = localStorage.getItem('accessToken');
 let refreshToken = localStorage.getItem('refreshToken');
 
+// Centralized routing to prevent infinite redirects
+export const ROUTES = {
+    LOGIN: '/login/',
+    RESET_PASSWORD: '/login/reset-password/',
+    HOME: '/',
+    ADMIN: '/admin/',
+    MACHINING: '/machining/',
+    MACHINING_TASKS: '/machining/tasks/',
+    MAINTENANCE: '/maintenance/'
+};
+
+// Track if we're currently redirecting to prevent loops
+let isRedirecting = false;
+
 export async function getUser() {
     const user_data = await authedFetch(`${backendBase}/users/me/`);
     return await user_data.json();
@@ -46,7 +60,7 @@ export async function login(username, password) {
 
 export function logout() {
     clearTokens();
-    window.location.href = '/login/';
+    navigateTo(ROUTES.LOGIN);
 }
 
 export function isLoggedIn() {
@@ -69,6 +83,89 @@ export function isAdmin() {
     } else {
         return false;
     }
+}
+
+// Soft reload function - updates state without full page reload
+export function softReload() {
+    console.log('Soft reload triggered');
+    // Dispatch a custom event that pages can listen to
+    window.dispatchEvent(new CustomEvent('softReload'));
+}
+
+// Enhanced navigation with optional soft reload
+export function navigateTo(path, options = {}) {
+    if (isRedirecting) return; // Prevent multiple simultaneous redirects
+    
+    isRedirecting = true;
+    
+    if (options.softReload && path === window.location.pathname) {
+        // If navigating to the same page, do a soft reload instead
+        softReload();
+    } else {
+        window.location.href = path;
+    }
+    
+    // Reset redirecting flag after a short delay
+    setTimeout(() => {
+        isRedirecting = false;
+    }, 100);
+}
+
+// Route guard functions
+export function shouldBeOnLoginPage() {
+    return !isLoggedIn();
+}
+
+export function shouldBeOnResetPasswordPage() {
+    return isLoggedIn() && mustResetPassword();
+}
+
+export function shouldBeOnMainPage() {
+    return isLoggedIn() && !mustResetPassword();
+}
+
+// Route guard utility for pages
+export function guardRoute() {
+    const currentPath = window.location.pathname;
+    
+    // If we're already redirecting, don't do anything
+    if (isRedirecting) {
+        return false;
+    }
+    
+    // If not logged in, should be on login page
+    if (!isLoggedIn()) {
+        if (currentPath !== ROUTES.LOGIN) {
+            navigateTo(ROUTES.LOGIN);
+            return false;
+        }
+        return true;
+    }
+    
+    // If logged in but must reset password, should be on reset password page
+    if (mustResetPassword()) {
+        if (currentPath !== ROUTES.RESET_PASSWORD) {
+            navigateTo(ROUTES.RESET_PASSWORD);
+            return false;
+        }
+        return true;
+    }
+    
+    // If logged in and doesn't need password reset, should be on main page
+    // (not on login or reset password pages)
+    if (currentPath === ROUTES.LOGIN || currentPath === ROUTES.RESET_PASSWORD) {
+        navigateTo(ROUTES.HOME);
+        return false;
+    }
+    
+    // If we get here, user is authenticated and on the right page
+    document.body.classList.remove('pre-auth');
+    return true;
+}
+
+// Enhanced enforceAuth with better logic
+export function enforceAuth() {
+    return guardRoute();
 }
 
 async function refreshAccessToken() {
@@ -132,17 +229,4 @@ export async function fetchUsers() {
         console.error('Failed to fetch users:', error);
         return [];
     }
-}
-
-export function enforceAuth() {
-    if (!isLoggedIn()) {
-        window.location.href = '/login';
-        return false;
-    }
-    else if (mustResetPassword()) {
-        window.location.href = '/reset-password';
-        return false;
-    }
-    document.body.classList.remove('pre-auth');
-    return true;
 }

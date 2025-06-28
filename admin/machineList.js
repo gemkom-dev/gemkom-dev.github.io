@@ -1,5 +1,5 @@
 import { fetchMachinesForMachining } from "../machining/machiningService.js";
-import { state } from "./admin.js";
+import { state } from "./adminState.js";
 
 export async function showMachineList() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');

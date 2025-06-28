@@ -2,8 +2,7 @@
 import { formatTime } from '../machining/machiningService.js';
 import { syncServerTime, getSyncedNow } from '../timeService.js';
 import { backendBase } from '../base.js';
-import { authedFetch } from '../authService.js';
-import { state as adminState } from '../admin/admin.js';
+import { authedFetch, navigateTo, ROUTES } from '../authService.js';
 
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
@@ -71,7 +70,7 @@ export class TimerWidget {
         });
 
         document.getElementById('timer-widget-new').addEventListener('click', () => {
-            window.location.href = '/machining';
+            navigateTo(ROUTES.MACHINING);
         });
 
         // Make widget draggable
@@ -276,22 +275,37 @@ export class TimerWidget {
     }
 
     startAdminStopPolling() {
-        setInterval(async () => {
+        this.adminPollingInterval = setInterval(async () => {
+            // Only poll if there are active timers to monitor
+            if (this.activeTimers.length === 0) {
+                return;
+            }
+            
             try {
                 const response = await authedFetch(`${backendBase}/machining/timers?is_active=true`);
                 if (response.ok) {
                     const latestTimers = await response.json();
+                    // Get current user information
+                    const currentUser = JSON.parse(localStorage.getItem('user'));
+                    
                     // Check for any timer in this.activeTimers that is missing or finished in latestTimers
                     for (const timer of this.activeTimers) {
                         const latest = latestTimers.find(t => t.id === timer.id);
                         if (!latest || latest.finish_time) {
-                            let name = 'yönetici';
-                            if (latest && (latest.stopped_by_first_name || latest.stopped_by_last_name)) {
-                                name = `${latest.stopped_by_first_name || ''} ${latest.stopped_by_last_name || ''}`.trim();
-                            }
-                            if (window.confirm(`Zamanlayıcı ${name} tarafından durduruldu. Sayfa yenilensin mi?`)) {
-                                window.location.reload();
-                                break;
+                            // Check if the timer was stopped by someone else
+                            const stoppedBySomeoneElse = latest && latest.stopped_by && 
+                                latest.stopped_by !== currentUser?.id && 
+                                latest.stopped_by !== currentUser?.username;
+                            
+                            if (stoppedBySomeoneElse) {
+                                let name = 'yönetici';
+                                if (latest && (latest.stopped_by_first_name || latest.stopped_by_last_name)) {
+                                    name = `${latest.stopped_by_first_name || ''} ${latest.stopped_by_last_name || ''}`.trim();
+                                }
+                                if (window.confirm(`Zamanlayıcı ${name} tarafından durduruldu. Sayfa yenilensin mi?`)) {
+                                    window.location.reload();
+                                    break;
+                                }
                             }
                         }
                     }

@@ -1,4 +1,4 @@
-import { logout, isAdmin, isLoggedIn, getUser } from '../authService.js';
+import { logout, isAdmin, isLoggedIn, getUser, navigateTo, ROUTES } from '../authService.js';
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
 
@@ -57,7 +57,7 @@ export function createNavbar() {
             // Check if user is logged in
             if (!isLoggedIn()) {
                 e.preventDefault();
-                window.location.href = '/login';
+                navigateTo(ROUTES.LOGIN);
             }
         });
     });
@@ -236,7 +236,7 @@ export function setupLogoutButton() {
     if (logoutButton) {
         logoutButton.onclick = () => {
             localStorage.clear();
-            window.location.href = '/login';
+            navigateTo(ROUTES.LOGIN);
         };
     }
 }

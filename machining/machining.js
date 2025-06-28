@@ -10,7 +10,7 @@ import {
 } from './machiningView.js';
 
 import { initNavbar } from '../components/navbar.js';
-import { enforceAuth } from '../authService.js';
+import { guardRoute } from '../authService.js';
 
 async function loadAndRender(filterId) {
   const issues = await fetchIssuesByFilter(filterId);
@@ -20,7 +20,7 @@ async function loadAndRender(filterId) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    if (!enforceAuth()) {
+    if (!guardRoute()) {
         return;
     }
     initNavbar();

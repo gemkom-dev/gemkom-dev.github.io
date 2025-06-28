@@ -1,6 +1,6 @@
 import { updateActiveTimers, updateMachines } from './adminView.js';
 import { fetchMachinesForMachining } from '../machining/machiningService.js';
-import { state } from './admin.js';
+import { state } from './adminState.js';
 import { getSyncedNow } from '../timeService.js';
 import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
 

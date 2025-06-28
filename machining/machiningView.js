@@ -3,6 +3,7 @@ import {
   state
 } from './machiningService.js';
 import { fetchMachinesForMachining } from './machiningService.js';
+import { navigateTo, ROUTES } from '../authService.js';
 
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');
@@ -17,7 +18,7 @@ export function renderTaskList(issues, openTimerCallback) {
       }
       // Store the full issue object in sessionStorage to use on the next page
       sessionStorage.setItem('selectedTask', JSON.stringify(issue));
-      window.location.href = `/machining/tasks/?key=${issue.key}`;
+      navigateTo(`${ROUTES.MACHINING_TASKS}?key=${issue.key}`);
     };
 
     const fields = issue.fields;

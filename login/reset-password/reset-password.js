@@ -1,7 +1,13 @@
-import { authedFetch } from '../../authService.js';
+import { authedFetch, navigateTo, ROUTES, shouldBeOnResetPasswordPage, getUser } from '../../authService.js';
 import { backendBase } from '../../base.js';
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user should be on this page
+    if (!shouldBeOnResetPasswordPage()) {
+        navigateTo(ROUTES.HOME);
+        return;
+    }
+
     const form = document.getElementById('reset-password-form');
     const newPasswordInput = document.getElementById('new-password');
     const confirmPasswordInput = document.getElementById('confirm-password');
@@ -34,10 +40,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({ new_password: newPassword })
             });
             if (res.ok) {
-                successDiv.textContent = 'Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz...';
+                // Update the user data in localStorage to reflect the password reset
+                try {
+                    const updatedUser = await getUser();
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                } catch (userError) {
+                    console.warn('Failed to refresh user data after password reset:', userError);
+                }
+                
+                successDiv.textContent = 'Şifreniz başarıyla güncellendi. Ana sayfaya yönlendiriliyorsunuz...';
                 successDiv.style.display = 'block';
                 setTimeout(() => {
-                    window.location.href = '/login/';
+                    navigateTo(ROUTES.HOME);
                 }, 1500);
             } else {
                 const data = await res.json().catch(() => ({}));
