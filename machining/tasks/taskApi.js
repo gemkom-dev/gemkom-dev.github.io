@@ -143,13 +143,14 @@ export async function reportMachineFault(machineId, description) {
 // ============================================================================
 
 export async function checkMachineMaintenance(machineId) {
-    const response = await authedFetch(`${backendBase}/machines/faults/?machine_id=${machineId}`);
+    const response = await authedFetch(`${backendBase}/machines/?used_in=machining`);
     
     if (!response.ok) {
         return false;
     }
     
-    const faults = await response.json();
-    // Check if there are any active faults (maintenance) for this machine
-    return faults.some(fault => fault.resolved_at === null);
+    const machines = await response.json();
+    // Find the machine by ID and check if it's under maintenance
+    const machine = machines.find(machine => machine.id === parseInt(machineId));
+    return machine ? machine.is_under_maintenance : false;
 } 

@@ -1,35 +1,26 @@
-:root {
-    --primary-color: #8B0000;
-    --secondary-color: #b40024;
-    --accent-color: #FF4D4D;
-    --text-color: #2c3e50;
-    --light-bg: #f8f9fa;
-}
-
 body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    color: var(--text-color);
-    line-height: 1.6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f9f9f9;
+    color: #333;
+    box-sizing: border-box;
+}
+
+
+/* ============================================================================
+   LAYOUT STYLES
+   ============================================================================ */
+
+.main-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-area {
+    flex: 1;
+    padding: 20px;
     background-color: var(--light-bg);
-}
-
-.navbar {
-    background-color: var(--primary-color);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.navbar-brand {
-    color: white !important;
-    font-weight: 600;
-}
-
-.nav-link {
-    color: rgba(255,255,255,0.9) !important;
-    transition: color 0.3s ease;
-}
-
-.nav-link:hover {
-    color: white !important;
 }
 
 .main-container {
@@ -37,8 +28,36 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     padding: 2rem;
-    margin-top: 2rem;
+    margin-top: 0;
 }
+
+/* ============================================================================
+   MAINTENANCE CONTENT STYLES
+   ============================================================================ */
+
+.maintenance-section {
+    display: none;
+}
+
+.maintenance-section.active {
+    display: block;
+}
+
+.maintenance-section h2 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.maintenance-section .description {
+    color: var(--text-color);
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+/* ============================================================================
+   BUTTON STYLES
+   ============================================================================ */
 
 .btn-primary {
     background-color: var(--secondary-color);
@@ -57,4 +76,38 @@ body {
 .card:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 12px rgba(139, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   DESCRIPTION STYLES
+   ============================================================================ */
+
+.description-toggle-container {
+    margin-bottom: 0;
+}
+
+.description-toggle {
+    color: #007bff !important;
+    text-decoration: none;
+    font-weight: normal;
+    transition: color 0.2s ease;
+}
+
+.description-toggle:hover {
+    color: #0056b3 !important;
+    text-decoration: underline;
+}
+
+.description-toggle:focus {
+    box-shadow: none;
+    outline: none;
+}
+
+.description-content {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+    line-height: 1.5;
+    color: #333;
 }
