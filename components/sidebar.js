@@ -21,7 +21,7 @@ class Sidebar {
         this.isMobile = window.innerWidth <= 768;
         this.updateMobileState();
         
-        // Calculate and set navbar height
+        // Calculate and set navbar height (only if navbar exists)
         this.updateNavbarHeight();
         
         // Listen for window resize
@@ -33,11 +33,11 @@ class Sidebar {
                 this.updateMobileState();
             }
             
-            // Update navbar height on resize
+            // Update navbar height on resize (only if navbar exists)
             this.updateNavbarHeight();
         });
         
-        // Listen for navbar collapse/expand events
+        // Listen for navbar collapse/expand events (only if navbar exists)
         this.setupNavbarListener();
     }
     
@@ -95,32 +95,41 @@ class Sidebar {
     }
     
     setupNavbarListener() {
-        // Listen for Bootstrap navbar collapse/expand events
-        const navbar = document.querySelector('.navbar-collapse');
-        if (navbar) {
-            // Use MutationObserver to detect when navbar classes change
-            const observer = new MutationObserver(() => {
-                this.updateNavbarHeight();
-            });
-            
-            observer.observe(navbar, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
-            
-            // Also listen for Bootstrap collapse events
-            navbar.addEventListener('shown.bs.collapse', () => {
-                this.updateNavbarHeight();
-            });
-            
-            navbar.addEventListener('hidden.bs.collapse', () => {
-                this.updateNavbarHeight();
-            });
+        // Only set up navbar listeners if navbar exists
+        const navbar = document.querySelector('.navbar');
+        const navbarCollapse = document.querySelector('.navbar-collapse');
+        
+        if (!navbar || !navbarCollapse) {
+            return; // Exit early if navbar doesn't exist
         }
         
-        // Also check for navbar height changes periodically
-        setInterval(() => {
+        // Use MutationObserver to detect when navbar classes change
+        const observer = new MutationObserver(() => {
             this.updateNavbarHeight();
+        });
+        
+        observer.observe(navbarCollapse, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        
+        // Also listen for Bootstrap collapse events
+        navbarCollapse.addEventListener('shown.bs.collapse', () => {
+            this.updateNavbarHeight();
+        });
+        
+        navbarCollapse.addEventListener('hidden.bs.collapse', () => {
+            this.updateNavbarHeight();
+        });
+        
+        // Also check for navbar height changes periodically (only if navbar exists)
+        this.navbarCheckInterval = setInterval(() => {
+            if (document.querySelector('.navbar')) {
+                this.updateNavbarHeight();
+            } else {
+                // Clear interval if navbar no longer exists
+                clearInterval(this.navbarCheckInterval);
+            }
         }, 1000);
     }
     
@@ -133,6 +142,14 @@ class Sidebar {
             // Update mobile nav indicator position if mobile
             if (this.isMobile && this.mobileNavIndicator) {
                 this.mobileNavIndicator.style.top = `calc(${navbarHeight}px + 10px)`;
+            }
+        } else {
+            // If no navbar exists, set default height to 0
+            document.documentElement.style.setProperty('--navbar-height', '0px');
+            
+            // Update mobile nav indicator position if mobile (no navbar)
+            if (this.isMobile && this.mobileNavIndicator) {
+                this.mobileNavIndicator.style.top = '20px';
             }
         }
     }
@@ -245,6 +262,13 @@ class Sidebar {
     open() {
         if (this.isMobile) {
             this.openMobileSidebar();
+        }
+    }
+    
+    // Cleanup method to remove intervals and observers
+    destroy() {
+        if (this.navbarCheckInterval) {
+            clearInterval(this.navbarCheckInterval);
         }
     }
 }
