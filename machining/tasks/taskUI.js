@@ -14,6 +14,7 @@ export function getUIElements() {
         stopOnlyBtn: document.getElementById('stop-only-button'),
         manualBtn: document.getElementById('manual-log-button'),
         doneBtn: document.getElementById('mark-done-button'),
+        faultBtn: document.getElementById('fault-report-button'),
         backBtn: document.getElementById('back-button'),
         timerDisplay: document.getElementById('timer-display'),
         taskTitle: document.getElementById('task-title')
@@ -26,7 +27,7 @@ export function updateTimerDisplay() {
 }
 
 export function setActiveTimerUI() {
-    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, backBtn } = getUIElements();
+    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, faultBtn, backBtn } = getUIElements();
     
     startBtn.textContent = 'Durdur ve İşle';
     startBtn.classList.remove('green');
@@ -34,11 +35,12 @@ export function setActiveTimerUI() {
     stopOnlyBtn.classList.remove('hidden');
     manualBtn.style.display = 'none';
     doneBtn.style.display = 'none';
+    faultBtn.style.display = 'none';
     backBtn.style.display = 'none';
 }
 
 export function setInactiveTimerUI() {
-    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, backBtn, timerDisplay } = getUIElements();
+    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, faultBtn, backBtn, timerDisplay } = getUIElements();
     
     startBtn.textContent = 'Başlat';
     startBtn.classList.remove('red');
@@ -46,6 +48,7 @@ export function setInactiveTimerUI() {
     stopOnlyBtn.classList.add('hidden');
     doneBtn.style.display = 'block';
     manualBtn.style.display = 'block';
+    faultBtn.style.display = 'block';
     backBtn.style.display = 'block';
     startBtn.disabled = false;
     stopOnlyBtn.disabled = false;

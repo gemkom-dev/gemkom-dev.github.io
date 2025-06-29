@@ -4,6 +4,8 @@ import {
 } from './machiningService.js';
 import { fetchMachinesForMachining } from './machiningService.js';
 import { navigateTo, ROUTES } from '../authService.js';
+import { authedFetch } from '../authService.js';
+import { backendBase } from '../base.js';
 
 export function renderTaskList(issues, openTimerCallback) {
   const ul = document.getElementById('task-list');
@@ -50,16 +52,47 @@ export function renderTaskList(issues, openTimerCallback) {
 export async function setupMachineFilters(onClick) {
   const select = document.getElementById('filter-select');
   select.innerHTML = '<option value="">Seçiniz...</option>'; // Reset options with placeholder
-  const machines = await fetchMachinesForMachining();
+  
+  // Fetch both machines and active timers
+  const [machines, activeTimersResponse] = await Promise.all([
+    fetchMachinesForMachining(),
+    authedFetch(`${backendBase}/machining/timers?is_active=true`)
+  ]);
+  
+  const activeTimers = activeTimersResponse.ok ? await activeTimersResponse.json() : [];
+  
   machines.forEach(f => {
     const option = document.createElement('option');
-    option.value = f.jira_id;
-    option.textContent = f.name;
+    option.value = f.jira_id; // Keep jira_id for filter functionality
+    option.dataset.machineId = f.id; // Store the actual machine id in data attribute
+ 
+    
+    // Check if this machine has an active timer
+    const isActive = activeTimers.some(t => t.machine === f.name);
+    
+    if (isActive) {
+      option.textContent = `${f.name} (Kullanımda)`;
+      option.disabled = true;
+      option.style.color = '#6b7280';
+      option.style.fontStyle = 'italic';
+    } else if(f.is_under_maintenance) {
+      option.textContent = `${f.name} (Bakımda)`;
+      option.disabled = true;
+      option.style.color = '#6b7280';
+      option.style.fontStyle = 'italic';
+    } else {
+      option.textContent = f.name;
+    }
+    
     select.appendChild(option);
   });
 
   select.onchange = () => {
-    onClick(select.value); // Call handler with selected value
+    const selectedOption = select.options[select.selectedIndex];
+    const selectedValue = select.value;
+    const machineId = selectedOption.dataset.machineId || -1;
+    sessionStorage.setItem('selectedMachineId', machineId);
+    onClick(selectedValue); // Call handler with selected jira_id value
   };
 }
 

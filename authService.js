@@ -113,6 +113,10 @@ export function navigateTo(path, options = {}) {
 
 export function navigateByTeam() {
     const user = JSON.parse(localStorage.getItem('user'));
+    if (isAdmin() || user.team === null){
+        navigateTo(ROUTES.HOME);
+        return;
+    }
     if (user.team === 'machining') {
         navigateTo(ROUTES.MACHINING);
     } else if (user.team === 'maintenance') {
