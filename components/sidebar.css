@@ -120,3 +120,201 @@
     color: #fff;
     font-weight: bold;
 }
+
+/* ============================================================================
+   MOBILE RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    /* Mobile sidebar behavior */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -200px; /* Start off-screen */
+        width: 250px; /* Slightly wider on mobile for better touch targets */
+        height: 100vh;
+        z-index: 10001; /* Higher than other elements */
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+    }
+    
+    .sidebar.mobile-open {
+        left: 0; /* Slide in from left */
+    }
+    
+    /* Mobile toggle button - make it more prominent */
+    .sidebar-toggle {
+        height: 60px; /* Larger touch target */
+        font-size: 1.8em;
+        padding-right: 20px;
+        background: rgba(255,255,255,0.1);
+        border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    /* Mobile sidebar items */
+    .sidebar-item {
+        padding: 16px 0 16px 20px; /* Larger touch targets */
+        font-size: 1.1em;
+        min-height: 50px; /* Minimum touch target height */
+        display: flex;
+        align-items: center;
+    }
+    
+    .sidebar-subitem {
+        padding: 12px 0 12px 30px; /* Indent subitems more */
+        font-size: 1em;
+        min-height: 44px;
+    }
+    
+    /* Mobile sidebar root adjustments */
+    #sidebar-root {
+        width: 0;
+        min-width: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 10001;
+    }
+    
+    #sidebar-root.closed {
+        width: 0;
+        min-width: 0;
+    }
+    
+    /* Mobile overlay for sidebar */
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* Adjust main layout for mobile */
+    .main-layout {
+        margin-left: 0 !important;
+    }
+    
+    /* Mobile collapsed state - hide completely */
+    .sidebar.collapsed {
+        left: -250px;
+        width: 250px;
+    }
+    
+    .sidebar.collapsed .sidebar-label {
+        display: block; /* Show labels on mobile when collapsed */
+    }
+    
+    .sidebar.collapsed .sidebar-item,
+    .sidebar.collapsed .sidebar-subitem {
+        pointer-events: auto; /* Re-enable pointer events on mobile */
+        background: #8B0000 !important;
+        color: #fff !important;
+    }
+    
+    /* Mobile navigation indicator */
+    .mobile-nav-indicator {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        width: 50px;
+        height: 50px;
+        background: #8B0000;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5em;
+        cursor: pointer;
+        z-index: 9999;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        transition: background-color 0.2s ease;
+    }
+    
+    .mobile-nav-indicator:hover {
+        background: #B22222;
+    }
+    
+    /* Hide desktop sidebar behavior on mobile */
+    .sidebar:not(.mobile-open) {
+        transform: translateX(-100%);
+    }
+}
+
+@media (max-width: 576px) {
+    /* Extra small devices */
+    .sidebar {
+        width: 280px; /* Even wider on very small screens */
+    }
+    
+    .sidebar.collapsed {
+        left: -280px;
+        width: 280px;
+    }
+    
+    .sidebar-item {
+        padding: 18px 0 18px 20px;
+        font-size: 1.2em;
+        min-height: 55px;
+    }
+    
+    .sidebar-subitem {
+        padding: 14px 0 14px 35px;
+        font-size: 1.1em;
+        min-height: 48px;
+    }
+    
+    .sidebar-toggle {
+        height: 65px;
+        font-size: 2em;
+    }
+    
+    .mobile-nav-indicator {
+        width: 55px;
+        height: 55px;
+        font-size: 1.6em;
+    }
+}
+
+/* ============================================================================
+   ACCESSIBILITY IMPROVEMENTS FOR MOBILE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    /* Ensure proper focus states on mobile */
+    .sidebar-item:focus,
+    .sidebar-subitem:focus,
+    .sidebar-toggle:focus {
+        outline: 2px solid #fff;
+        outline-offset: -2px;
+    }
+    
+    /* Improve touch feedback */
+    .sidebar-item:active,
+    .sidebar-subitem:active {
+        background: #B22222 !important;
+        transform: scale(0.98);
+    }
+    
+    /* Prevent text selection on mobile */
+    .sidebar-item,
+    .sidebar-subitem,
+    .sidebar-label {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+}

@@ -10,10 +10,126 @@ class Sidebar {
         this.list = document.createElement('ul');
         this.sidebar.appendChild(this.list);
         this.container.appendChild(this.sidebar);
-        this.toggleButton.addEventListener('click', () => {
-            this.sidebar.classList.toggle('collapsed');
-            this.container.classList.toggle('closed', this.sidebar.classList.contains('collapsed'));
+        
+        // Mobile-specific elements
+        this.createMobileElements();
+        
+        // Event listeners
+        this.setupEventListeners();
+        
+        // Check if mobile
+        this.isMobile = window.innerWidth <= 768;
+        this.updateMobileState();
+        
+        // Listen for window resize
+        window.addEventListener('resize', () => {
+            const wasMobile = this.isMobile;
+            this.isMobile = window.innerWidth <= 768;
+            
+            if (wasMobile !== this.isMobile) {
+                this.updateMobileState();
+            }
         });
+    }
+    
+    createMobileElements() {
+        // Create mobile navigation indicator
+        this.mobileNavIndicator = document.createElement('div');
+        this.mobileNavIndicator.className = 'mobile-nav-indicator';
+        this.mobileNavIndicator.innerHTML = '&#9776;';
+        this.mobileNavIndicator.style.display = 'none';
+        document.body.appendChild(this.mobileNavIndicator);
+        
+        // Create overlay
+        this.overlay = document.createElement('div');
+        this.overlay.className = 'sidebar-overlay';
+        document.body.appendChild(this.overlay);
+    }
+    
+    setupEventListeners() {
+        // Desktop toggle
+        this.toggleButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.isMobile) {
+                this.toggleMobileSidebar();
+            } else {
+                this.toggleDesktopSidebar();
+            }
+        });
+        
+        // Mobile navigation indicator
+        this.mobileNavIndicator.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMobileSidebar();
+        });
+        
+        // Overlay click to close
+        this.overlay.addEventListener('click', () => {
+            this.closeMobileSidebar();
+        });
+        
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (this.isMobile && this.sidebar.classList.contains('mobile-open')) {
+                if (!this.sidebar.contains(e.target) && !this.mobileNavIndicator.contains(e.target)) {
+                    this.closeMobileSidebar();
+                }
+            }
+        });
+        
+        // Close sidebar on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isMobile && this.sidebar.classList.contains('mobile-open')) {
+                this.closeMobileSidebar();
+            }
+        });
+    }
+    
+    updateMobileState() {
+        if (this.isMobile) {
+            // Mobile state
+            this.mobileNavIndicator.style.display = 'flex';
+            this.sidebar.classList.remove('collapsed');
+            this.container.classList.remove('closed');
+            this.closeMobileSidebar();
+        } else {
+            // Desktop state
+            this.mobileNavIndicator.style.display = 'none';
+            this.overlay.classList.remove('active');
+            this.sidebar.classList.remove('mobile-open');
+            this.sidebar.style.left = '';
+            this.sidebar.style.position = '';
+            this.sidebar.style.width = '';
+            this.sidebar.style.height = '';
+            this.sidebar.style.zIndex = '';
+            this.sidebar.style.boxShadow = '';
+            this.sidebar.style.transition = '';
+        }
+    }
+    
+    toggleMobileSidebar() {
+        if (this.sidebar.classList.contains('mobile-open')) {
+            this.closeMobileSidebar();
+        } else {
+            this.openMobileSidebar();
+        }
+    }
+    
+    openMobileSidebar() {
+        this.sidebar.classList.add('mobile-open');
+        this.overlay.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+    
+    closeMobileSidebar() {
+        this.sidebar.classList.remove('mobile-open');
+        this.overlay.classList.remove('active');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+    
+    toggleDesktopSidebar() {
+        this.sidebar.classList.toggle('collapsed');
+        this.container.classList.toggle('closed', this.sidebar.classList.contains('collapsed'));
     }
 
     addItem(label, options = {}) {
@@ -41,11 +157,41 @@ class Sidebar {
                 const isCollapsed = subList.style.display === 'none';
                 subList.style.display = isCollapsed ? 'block' : 'none';
                 itemLabel.classList.toggle('collapsed', isCollapsed);
+                
+                // Close mobile sidebar after item selection
+                if (this.isMobile) {
+                    setTimeout(() => {
+                        this.closeMobileSidebar();
+                    }, 300);
+                }
+            });
+        } else {
+            // For non-collapsible items, close mobile sidebar after click
+            item.addEventListener('click', () => {
+                if (this.isMobile) {
+                    setTimeout(() => {
+                        this.closeMobileSidebar();
+                    }, 300);
+                }
             });
         }
 
         this.list.appendChild(item);
         return item;
+    }
+    
+    // Method to programmatically close mobile sidebar
+    close() {
+        if (this.isMobile) {
+            this.closeMobileSidebar();
+        }
+    }
+    
+    // Method to programmatically open mobile sidebar
+    open() {
+        if (this.isMobile) {
+            this.openMobileSidebar();
+        }
     }
 }
 
