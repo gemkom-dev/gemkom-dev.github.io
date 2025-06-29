@@ -31,15 +31,23 @@ async function checkMaintenanceAndAlert() {
 export function setupStartStopHandler() {
     const startBtn = document.getElementById('start-stop');
     
-    startBtn.onclick = async () => {
-        if (checkMaintenanceAndAlert()) return;
-        
-        if (!state.timerActive) {
-            await handleStartTimer();
-        } else {
-            await handleStopTimer();
-        }
-    };
+    // Remove any existing listeners to prevent duplicates
+    startBtn.removeEventListener('click', handleStartStopClick);
+    
+    // Add new event listener
+    startBtn.addEventListener('click', handleStartStopClick);
+}
+
+async function handleStartStopClick() {
+    if (await checkMaintenanceAndAlert()) {
+        return;
+    }
+    console.log("handleStartStopClick");
+    if (!state.timerActive) {
+        await handleStartTimer();
+    } else {
+        await handleStopTimer();
+    }
 }
 
 async function handleStartTimer() {
@@ -121,34 +129,40 @@ async function handleStopTimer() {
 export function setupStopOnlyHandler() {
     const stopOnlyBtn = document.getElementById('stop-only-button');
     
-    stopOnlyBtn.onclick = async () => {
-        if (checkMaintenanceAndAlert()) return;
+    // Remove any existing listeners to prevent duplicates
+    stopOnlyBtn.removeEventListener('click', handleStopOnlyClick);
+    
+    // Add new event listener
+    stopOnlyBtn.addEventListener('click', handleStopOnlyClick);
+}
+
+async function handleStopOnlyClick() {
+    if (await checkMaintenanceAndAlert()) return;
+    
+    state.timerActive = false;
+    clearInterval(state.intervalId);
+    setInactiveTimerUI();
+    
+    try {
+        const success = await stopTimerShared({ 
+            timerId: state.currentTimerId, 
+            finishTime: getSyncedNow(), 
+            syncToJira: false 
+        });
         
-        state.timerActive = false;
-        clearInterval(state.intervalId);
-        setInactiveTimerUI();
-        
-        try {
-            const success = await stopTimerShared({ 
-                timerId: state.currentTimerId, 
-                finishTime: getSyncedNow(), 
-                syncToJira: false 
-            });
+        if (success) {
+            // Trigger timer widget update
+            TimerWidget.triggerUpdate();
             
-            if (success) {
-                // Trigger timer widget update
-                TimerWidget.triggerUpdate();
-                
-                // UI is already reset above, just perform soft reload
-                await performSoftReload();
-            } else {
-                alert("Zamanlayıcı durdurulamadı.");
-            }
-        } catch (error) {
-            console.error('Error stopping timer:', error);
-            alert("Zamanlayıcı durdurulurken hata oluştu.");
+            // UI is already reset above, just perform soft reload
+            await performSoftReload();
+        } else {
+            alert("Zamanlayıcı durdurulamadı.");
         }
-    };
+    } catch (error) {
+        console.error('Error stopping timer:', error);
+        alert("Zamanlayıcı durdurulurken hata oluştu.");
+    }
 }
 
 // ============================================================================
@@ -158,57 +172,81 @@ export function setupStopOnlyHandler() {
 export function setupMarkDoneHandler() {
     const doneBtn = document.getElementById('mark-done-button');
     
-    doneBtn.onclick = async () => {
-        if (checkMaintenanceAndAlert()) return;
-        
-        if (!confirm(`${state.selectedIssue.customfield_10187} adetin hepsini tamamladınız mı?`)) {
-            return;
-        }
-        
-        try {
-            const marked = await markTaskAsDone();
-            if (marked) {
-                alert('Görev tamamlandı olarak işaretlendi.');
-                navigateTo(ROUTES.MACHINING);
-            } else {
-                alert("Hata oluştu. Lütfen tekrar deneyin.");
-            }
-        } catch (error) {
-            console.error('Error marking as done:', error);
+    // Remove any existing listeners to prevent duplicates
+    doneBtn.removeEventListener('click', handleMarkDoneClick);
+    
+    // Add new event listener
+    doneBtn.addEventListener('click', handleMarkDoneClick);
+}
+
+async function handleMarkDoneClick() {
+    if (await checkMaintenanceAndAlert()) return;
+    
+    if (!confirm(`${state.selectedIssue.customfield_10187} adetin hepsini tamamladınız mı?`)) {
+        return;
+    }
+    
+    try {
+        const marked = await markTaskAsDone();
+        if (marked) {
+            alert('Görev tamamlandı olarak işaretlendi.');
+            navigateTo(ROUTES.MACHINING);
+        } else {
             alert("Hata oluştu. Lütfen tekrar deneyin.");
         }
-    };
+    } catch (error) {
+        console.error('Error marking as done:', error);
+        alert("Hata oluştu. Lütfen tekrar deneyin.");
+    }
 }
 
 export function setupManualLogHandler() {
     const manualBtn = document.getElementById('manual-log-button');
     
-    manualBtn.onclick = async () => {
-        if (checkMaintenanceAndAlert()) return;
-        
-        await showManualTimeModal();
-    };
+    // Remove any existing listeners to prevent duplicates
+    manualBtn.removeEventListener('click', handleManualLogClick);
+    
+    // Add new event listener
+    manualBtn.addEventListener('click', handleManualLogClick);
+}
+
+async function handleManualLogClick() {
+    if (await checkMaintenanceAndAlert()) return;
+    
+    await showManualTimeModal();
 }
 
 export function setupFaultReportHandler() {
     const faultBtn = document.getElementById('fault-report-button');
     
-    faultBtn.onclick = async () => {
-        await createFaultReportModal();
-    };
+    // Remove any existing listeners to prevent duplicates
+    faultBtn.removeEventListener('click', handleFaultReportClick);
+    
+    // Add new event listener
+    faultBtn.addEventListener('click', handleFaultReportClick);
+}
+
+async function handleFaultReportClick() {
+    await createFaultReportModal();
 }
 
 export function setupBackHandler() {
     const backBtn = document.getElementById('back-button');
     
-    backBtn.onclick = () => {
-        if (state.timerActive) {
-            if (!confirm("Zamanlayıcı aktif. Geri dönmek istediğinize emin misiniz?")) {
-                return;
-            }
-            clearInterval(state.intervalId);
-            setInactiveTimerUI();
+    // Remove any existing listeners to prevent duplicates
+    backBtn.removeEventListener('click', handleBackClick);
+    
+    // Add new event listener
+    backBtn.addEventListener('click', handleBackClick);
+}
+
+function handleBackClick() {
+    if (state.timerActive) {
+        if (!confirm("Zamanlayıcı aktif. Geri dönmek istediğinize emin misiniz?")) {
+            return;
         }
-        navigateTo(ROUTES.MACHINING);
-    };
+        clearInterval(state.intervalId);
+        setInactiveTimerUI();
+    }
+    navigateTo(ROUTES.MACHINING);
 } 

@@ -11,7 +11,7 @@ import { setupTimerHandlers as setupTimerHandlersLogic } from './taskLogic.js';
 export function setupAllHandlers(restoring = false) {
     // Setup timer logic
     setupTimerHandlersLogic(restoring);
-    
+    console.log("setupAllHandlers");
     // Setup all event handlers
     setupStartStopHandler();
     setupStopOnlyHandler();

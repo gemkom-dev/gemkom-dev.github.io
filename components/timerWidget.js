@@ -180,7 +180,11 @@ export class TimerWidget {
                                      target.closest('select') ||
                                      target.closest('textarea') ||
                                      target.onclick ||
-                                     target.getAttribute('onclick');
+                                     target.getAttribute('onclick') ||
+                                     target.classList.contains('clickable') ||
+                                     target.closest('.clickable') ||
+                                     target.hasAttribute('data-action') ||
+                                     target.closest('[data-action]');
                 
                 if (!isInteractive) {
                     this.toggleWidget();

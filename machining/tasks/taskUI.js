@@ -3,6 +3,14 @@
 
 import { state, formatTime } from '../machiningService.js';
 import { getSyncedNow } from '../../timeService.js';
+import { 
+    setupStartStopHandler, 
+    setupStopOnlyHandler, 
+    setupManualLogHandler, 
+    setupMarkDoneHandler, 
+    setupFaultReportHandler, 
+    setupBackHandler 
+} from './taskActions.js';
 
 // ============================================================================
 // UI MANAGEMENT
@@ -37,6 +45,10 @@ export function setActiveTimerUI() {
     doneBtn.style.display = 'none';
     faultBtn.style.display = 'none';
     backBtn.style.display = 'none';
+    
+    // Reattach handlers for visible buttons
+    setupStartStopHandler();
+    setupStopOnlyHandler();
 }
 
 export function setInactiveTimerUI() {
@@ -53,6 +65,13 @@ export function setInactiveTimerUI() {
     startBtn.disabled = false;
     stopOnlyBtn.disabled = false;
     timerDisplay.textContent = '00:00:00';
+    
+    // Reattach handlers for all visible buttons
+    setupStartStopHandler();
+    setupManualLogHandler();
+    setupMarkDoneHandler();
+    setupFaultReportHandler();
+    setupBackHandler();
 }
 
 export function setupTaskInfoDisplay() {
