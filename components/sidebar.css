@@ -132,10 +132,11 @@
         top: 0;
         left: -200px; /* Start off-screen */
         width: 250px; /* Slightly wider on mobile for better touch targets */
-        height: 100vh;
+        height: calc(100vh - var(--navbar-height, 56px)); /* Subtract navbar height */
         z-index: 10001; /* Higher than other elements */
         transition: left 0.3s ease;
         box-shadow: 2px 0 15px rgba(0,0,0,0.3);
+        margin-top: var(--navbar-height, 56px); /* Add margin to push below navbar */
     }
     
     .sidebar.mobile-open {
@@ -223,10 +224,10 @@
         color: #fff !important;
     }
     
-    /* Mobile navigation indicator */
+    /* Mobile navigation indicator - position below navbar */
     .mobile-nav-indicator {
         position: fixed;
-        top: 20px;
+        top: calc(var(--navbar-height, 56px) + 10px); /* Position below navbar */
         left: 20px;
         width: 50px;
         height: 50px;
@@ -257,6 +258,8 @@
     /* Extra small devices */
     .sidebar {
         width: 280px; /* Even wider on very small screens */
+        height: calc(100vh - var(--navbar-height, 56px));
+        margin-top: var(--navbar-height, 56px);
     }
     
     .sidebar.collapsed {
@@ -285,6 +288,7 @@
         width: 55px;
         height: 55px;
         font-size: 1.6em;
+        top: calc(var(--navbar-height, 56px) + 10px);
     }
 }
 

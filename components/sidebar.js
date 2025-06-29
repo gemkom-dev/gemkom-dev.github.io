@@ -21,6 +21,9 @@ class Sidebar {
         this.isMobile = window.innerWidth <= 768;
         this.updateMobileState();
         
+        // Calculate and set navbar height
+        this.updateNavbarHeight();
+        
         // Listen for window resize
         window.addEventListener('resize', () => {
             const wasMobile = this.isMobile;
@@ -29,7 +32,13 @@ class Sidebar {
             if (wasMobile !== this.isMobile) {
                 this.updateMobileState();
             }
+            
+            // Update navbar height on resize
+            this.updateNavbarHeight();
         });
+        
+        // Listen for navbar collapse/expand events
+        this.setupNavbarListener();
     }
     
     createMobileElements() {
@@ -85,6 +94,49 @@ class Sidebar {
         });
     }
     
+    setupNavbarListener() {
+        // Listen for Bootstrap navbar collapse/expand events
+        const navbar = document.querySelector('.navbar-collapse');
+        if (navbar) {
+            // Use MutationObserver to detect when navbar classes change
+            const observer = new MutationObserver(() => {
+                this.updateNavbarHeight();
+            });
+            
+            observer.observe(navbar, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+            
+            // Also listen for Bootstrap collapse events
+            navbar.addEventListener('shown.bs.collapse', () => {
+                this.updateNavbarHeight();
+            });
+            
+            navbar.addEventListener('hidden.bs.collapse', () => {
+                this.updateNavbarHeight();
+            });
+        }
+        
+        // Also check for navbar height changes periodically
+        setInterval(() => {
+            this.updateNavbarHeight();
+        }, 1000);
+    }
+    
+    updateNavbarHeight() {
+        const navbar = document.querySelector('.navbar');
+        if (navbar) {
+            const navbarHeight = navbar.offsetHeight;
+            document.documentElement.style.setProperty('--navbar-height', `${navbarHeight}px`);
+            
+            // Update mobile nav indicator position if mobile
+            if (this.isMobile && this.mobileNavIndicator) {
+                this.mobileNavIndicator.style.top = `calc(${navbarHeight}px + 10px)`;
+            }
+        }
+    }
+    
     updateMobileState() {
         if (this.isMobile) {
             // Mobile state
@@ -92,6 +144,7 @@ class Sidebar {
             this.sidebar.classList.remove('collapsed');
             this.container.classList.remove('closed');
             this.closeMobileSidebar();
+            this.updateNavbarHeight(); // Update height for mobile
         } else {
             // Desktop state
             this.mobileNavIndicator.style.display = 'none';
@@ -104,6 +157,7 @@ class Sidebar {
             this.sidebar.style.zIndex = '';
             this.sidebar.style.boxShadow = '';
             this.sidebar.style.transition = '';
+            this.sidebar.style.marginTop = '';
         }
     }
     
