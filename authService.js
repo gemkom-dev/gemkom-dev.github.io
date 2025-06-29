@@ -111,6 +111,15 @@ export function navigateTo(path, options = {}) {
     }, 100);
 }
 
+export function navigateByTeam() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user.team === 'machining') {
+        navigateTo(ROUTES.MACHINING);
+    } else if (user.team === 'maintenance') {
+        navigateTo(ROUTES.MAINTENANCE);
+    }
+}
+
 // Route guard functions
 export function shouldBeOnLoginPage() {
     return !isLoggedIn();

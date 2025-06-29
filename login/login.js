@@ -1,5 +1,5 @@
 // login/login.js
-import { login, fetchUsers, mustResetPassword, isLoggedIn, navigateTo, ROUTES, shouldBeOnLoginPage } from '../authService.js';
+import { login, fetchUsers, navigateTo, ROUTES, shouldBeOnLoginPage, navigateByTeam } from '../authService.js';
 
 function populateUserSelect(users) {
     const userSelect = document.getElementById('user-select');
@@ -16,7 +16,7 @@ function populateUserSelect(users) {
 document.addEventListener('DOMContentLoaded', async () => {
     // Check if user should be on this page
     if (!shouldBeOnLoginPage()) {
-        navigateTo(ROUTES.HOME);
+        navigateByTeam();
         return;
     }
 
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (user.must_reset_password){
                 navigateTo(ROUTES.RESET_PASSWORD);
             } else {
-                navigateTo(ROUTES.HOME);
+                navigateByTeam();
             }
         } catch (error) {
             errorMessage.textContent = 'Kullanıcı adı veya şifre hatalı.';

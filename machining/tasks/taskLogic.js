@@ -5,6 +5,7 @@ import { state, restoreTimerState, formatTime, formatJiraDate, saveTimerState, s
 import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { proxyBase, backendBase } from '../../base.js';
 import { authedFetch, navigateTo, ROUTES } from '../../authService.js';
+import { TimerWidget } from '../../components/timerWidget.js';
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -260,6 +261,10 @@ export async function logManualTime() {
                 
                 if (jiraResponse.ok) {
                     alert(`Manuel zaman girişi başarılı: ${formatTime(elapsedSeconds)}`);
+                    
+                    // Trigger timer widget update
+                    TimerWidget.triggerUpdate();
+                    
                     // Trigger soft reload
                     window.dispatchEvent(new CustomEvent('softReload'));
                 } else {

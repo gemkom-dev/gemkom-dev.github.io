@@ -3,6 +3,7 @@ import { fetchMachinesForMachining } from '../machining/machiningService.js';
 import { state } from './adminState.js';
 import { getSyncedNow } from '../timeService.js';
 import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
+import { TimerWidget } from '../components/timerWidget.js';
 
 export async function showMachiningLiveReport() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
@@ -108,6 +109,9 @@ async function handleSaveToJira(timerId) {
         alert('Jira kaydı başarısız!');
     }
 
+    // Trigger timer widget update
+    TimerWidget.triggerUpdate();
+
     await updateActiveTimers();
     await updateMachines();
 }
@@ -121,5 +125,9 @@ async function handleStopOnly(timerId) {
     } else {
         alert('Timer durdurulamadı!');
     }
+    
+    // Trigger timer widget update
+    TimerWidget.triggerUpdate();
+    
     await updateActiveTimers();
 }

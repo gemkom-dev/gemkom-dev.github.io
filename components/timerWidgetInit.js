@@ -12,6 +12,13 @@ function initializeTimerWidget() {
         if (!window.timerWidget) {
             console.log('Initializing timer widget...');
             window.timerWidget = new TimerWidget();
+            
+            // Add global event listener for timer updates
+            window.addEventListener('timerUpdated', async () => {
+                if (window.timerWidget) {
+                    await window.timerWidget.refreshTimerWidget();
+                }
+            });
         }
     }
 }

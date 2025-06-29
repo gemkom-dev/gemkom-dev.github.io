@@ -14,18 +14,23 @@ export class TimerWidget {
         this.isVisible = true; // Start visible
         this.activeTimers = [];
         this.updateInterval = null;
+        this.adminPollingInterval = null;
         this.lastSyncTime = 0;
         this.init();
     }
 
     async init() {
+        // Always create the widget first
+        this.createWidget();
+        
         // Ensure time is synchronized when widget initializes
         await this.loadActiveTimers();
         if (this.activeTimers.length === 0) {
+            // If no active timers, just render empty state
+            this.renderTimers();
             return;
         }    
         await this.ensureTimeSync();
-        this.createWidget();
         this.renderTimers();
         this.startUpdateInterval();
         this.startAdminStopPolling();
@@ -52,7 +57,7 @@ export class TimerWidget {
         widget.innerHTML = `
             <div class="timer-widget-header">
                 <span class="timer-widget-title">⏱️ Aktif Zamanlayıcılar</span>
-                <button class="timer-widget-toggle" id="timer-widget-toggle">−</button>
+                <span class="timer-widget-toggle" id="timer-widget-toggle">−</span>
             </div>
             <div class="timer-widget-content" id="timer-widget-content">
                 <div class="timer-widget-loading">Yükleniyor...</div>
@@ -65,15 +70,11 @@ export class TimerWidget {
         document.body.appendChild(widget);
 
         // Add event listeners
-        document.getElementById('timer-widget-toggle').addEventListener('click', () => {
-            this.toggleWidget();
-        });
-
         document.getElementById('timer-widget-new').addEventListener('click', () => {
             navigateTo(ROUTES.MACHINING);
         });
 
-        // Make widget draggable
+        // Make widget draggable and handle header clicks
         this.makeDraggable(widget);
         
         // Add click outside to minimize functionality
@@ -82,21 +83,28 @@ export class TimerWidget {
 
     makeDraggable(widget) {
         let isDragging = false;
+        let hasDragged = false;
         let currentX;
         let currentY;
         let initialX;
         let initialY;
         let xOffset = 0;
         let yOffset = 0;
+        let dragThreshold = 5; // Minimum distance to consider as dragging
+        let startX, startY;
 
         const header = widget.querySelector('.timer-widget-header');
 
         header.addEventListener('mousedown', (e) => {
-            if (e.target.classList.contains('timer-widget-toggle')) return;
-            
+            hasDragged = false;
+            startX = e.clientX;
+            startY = e.clientY;
             initialX = e.clientX - xOffset;
             initialY = e.clientY - yOffset;
             isDragging = true;
+            
+            // Add dragging class for visual feedback
+            widget.classList.add('dragging');
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -104,15 +112,54 @@ export class TimerWidget {
                 e.preventDefault();
                 currentX = e.clientX - initialX;
                 currentY = e.clientY - initialY;
+                
+                // Check if we've moved enough to consider it dragging
+                const distance = Math.sqrt(
+                    Math.pow(e.clientX - startX, 2) + 
+                    Math.pow(e.clientY - startY, 2)
+                );
+                
+                if (distance > dragThreshold) {
+                    hasDragged = true;
+                }
+                
                 xOffset = currentX;
                 yOffset = currentY;
 
-                widget.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                // Use requestAnimationFrame for smoother updates
+                requestAnimationFrame(() => {
+                    widget.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                });
             }
         });
 
         document.addEventListener('mouseup', () => {
-            isDragging = false;
+            if (isDragging) {
+                isDragging = false;
+                
+                // Remove dragging class
+                widget.classList.remove('dragging');
+                
+                // If we dragged, prevent the click event from toggling
+                if (hasDragged) {
+                    setTimeout(() => {
+                        hasDragged = false;
+                    }, 100);
+                }
+            }
+        });
+
+        // Handle header clicks for toggle functionality
+        header.addEventListener('click', (e) => {
+            // If we just dragged, don't toggle
+            if (hasDragged) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+            
+            // Otherwise, toggle the widget
+            this.toggleWidget();
         });
     }
 
@@ -120,7 +167,24 @@ export class TimerWidget {
         document.addEventListener('click', (e) => {
             // Only minimize if widget is currently visible and click is outside the widget
             if (this.isVisible && !widget.contains(e.target)) {
-                this.toggleWidget();
+                // Don't minimize if clicking on interactive elements
+                const target = e.target;
+                const isInteractive = target.tagName === 'BUTTON' || 
+                                     target.tagName === 'A' || 
+                                     target.tagName === 'INPUT' || 
+                                     target.tagName === 'SELECT' || 
+                                     target.tagName === 'TEXTAREA' ||
+                                     target.closest('button') ||
+                                     target.closest('a') ||
+                                     target.closest('input') ||
+                                     target.closest('select') ||
+                                     target.closest('textarea') ||
+                                     target.onclick ||
+                                     target.getAttribute('onclick');
+                
+                if (!isInteractive) {
+                    this.toggleWidget();
+                }
             }
         });
     }
@@ -144,25 +208,19 @@ export class TimerWidget {
         if (this.activeTimers.length === 0) {
             content.innerHTML = `
                 <div class="timer-widget-empty">
-                    <div class="timer-widget-empty-icon">⏰</div>
-                    <div class="timer-widget-empty-text">Aktif zamanlayıcı yok</div>
                 </div>
             `;
+            return;
         }
 
         content.innerHTML = this.activeTimers.map(timer => `
-            <div class="timer-widget-item" data-timer-id="${timer.id}">
+            <div class="timer-widget-item" data-timer-id="${timer.id}" onclick="window.location.href='/machining/tasks/?key=${timer.issue_key}'">
                 <div class="timer-widget-item-header">
                     <span class="timer-widget-issue">${timer.issue_key}</span>
                     <span class="timer-widget-machine">${timer.machine || 'Bilinmeyen'}</span>
                 </div>
                 <div class="timer-widget-time" id="timer-display-${timer.id}">
                     ${this.formatDuration(timer.start_time)}
-                </div>
-                <div class="timer-widget-actions">
-                    <button class="timer-widget-view" onclick="window.location.href='/machining/tasks/?key=${timer.issue_key}'">
-                        Görüntüle
-                    </button>
                 </div>
             </div>
         `).join('');
@@ -263,7 +321,8 @@ export class TimerWidget {
     }
 
     destroy() {
-        clearInterval(this.updateInterval);
+        this.stopUpdateInterval();
+        this.stopAdminPolling();
         const widget = document.getElementById('timer-widget');
         if (widget) {
             document.body.removeChild(widget);
@@ -314,6 +373,47 @@ export class TimerWidget {
                 console.error('Error polling user timers:', error);
             }
         }, 5000);
+    }
+
+    async reloadActiveTimers() {
+        const hadActiveTimers = this.activeTimers.length > 0;
+        await this.loadActiveTimers();
+        
+        // If we now have active timers but didn't before, start polling and update interval
+        if (this.activeTimers.length > 0 && !hadActiveTimers) {
+            this.startAdminStopPolling();
+            this.startUpdateInterval();
+        }
+        // If we no longer have active timers but did before, stop polling and update interval
+        else if (this.activeTimers.length === 0 && hadActiveTimers) {
+            this.stopAdminPolling();
+            this.stopUpdateInterval();
+        }
+        
+        this.renderTimers();
+    }
+
+    async refreshTimerWidget() {
+        await this.reloadActiveTimers();
+    }
+
+    stopAdminPolling() {
+        if (this.adminPollingInterval) {
+            clearInterval(this.adminPollingInterval);
+            this.adminPollingInterval = null;
+        }
+    }
+
+    stopUpdateInterval() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+    }
+
+    // Static method to trigger timer updates globally
+    static triggerUpdate() {
+        window.dispatchEvent(new CustomEvent('timerUpdated'));
     }
 }
  

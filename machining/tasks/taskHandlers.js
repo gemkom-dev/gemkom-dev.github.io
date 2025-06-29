@@ -6,6 +6,7 @@ import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { navigateTo, ROUTES } from '../../authService.js';
 import { startTimer, markTaskAsDone, logManualTime, performSoftReload } from './taskLogic.js';
 import { getUIElements, setActiveTimerUI, setInactiveTimerUI, updateTimerDisplay } from './taskUI.js';
+import { TimerWidget } from '../../components/timerWidget.js';
 
 // ============================================================================
 // TIMER EVENT HANDLERS
@@ -27,6 +28,9 @@ export function setupStartStopHandler() {
             try {
                 const startData = await startTimer();
                 state.currentTimerId = startData.id;
+                
+                // Trigger timer widget update
+                TimerWidget.triggerUpdate();
             } catch (error) {
                 console.error('Error starting timer:', error);
                 alert("Zamanlayıcı başlatılırken hata oluştu.");
@@ -50,6 +54,10 @@ export function setupStartStopHandler() {
                 if (logged) {
                     // Reset UI immediately after successful stop
                     setInactiveTimerUI();
+                    
+                    // Trigger timer widget update
+                    TimerWidget.triggerUpdate();
+                    
                     await performSoftReload();
                 } else {
                     alert("Hata oluştu. Lütfen tekrar deneyin.");
@@ -74,6 +82,10 @@ export function setupStopOnlyHandler() {
         
         try {
             await stopTimerShared({ timerId: state.currentTimerId, finishTime: getSyncedNow(), syncToJira: false });
+            
+            // Trigger timer widget update
+            TimerWidget.triggerUpdate();
+            
             // UI is already reset above, just perform soft reload
             await performSoftReload();
         } catch (error) {
