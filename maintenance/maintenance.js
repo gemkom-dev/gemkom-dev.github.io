@@ -35,6 +35,22 @@ async function fetchMaintenanceRequests() {
     }
 }
 
+async function fetchMachines() {
+    try {
+        const response = await authedFetch(`${backendBase}/machines/`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch machines');
+        }
+        
+        const machines = await response.json();
+        return machines;
+    } catch (error) {
+        console.error('Error fetching machines:', error);
+        throw error;
+    }
+}
+
 // ============================================================================
 // CONTENT MANAGEMENT
 // ============================================================================
@@ -67,24 +83,24 @@ function createMaintenanceRequestForm() {
                                     </select>
                                 </div>
                                 
+                                <div class="mb-3" id="fault-operable-container" style="display: none;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="is-operable" checked>
+                                        <label class="form-check-label" for="is-operable">
+                                            Makine çalışır durumda
+                                        </label>
+                                    </div>
+                                </div>
+                                
                                 <div class="mb-3">
                                     <label for="description" class="form-label">Açıklama</label>
                                     <textarea class="form-control" id="description" rows="4" 
                                               placeholder="Bakım/arıza detaylarını açıklayın..." required></textarea>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label for="priority" class="form-label">Öncelik</label>
-                                    <select class="form-select" id="priority" required>
-                                        <option value="">Öncelik seçin...</option>
-                                        <option value="low">Düşük</option>
-                                        <option value="medium">Orta</option>
-                                        <option value="high">Yüksek</option>
-                                        <option value="urgent">Acil</option>
-                                    </select>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">Talep Oluştur</button>
                                 </div>
-                                
-                                <button type="submit" class="btn btn-primary">Talep Oluştur</button>
                             </form>
                         </div>
                     </div>
@@ -262,6 +278,7 @@ function createRequestCard(request) {
 }
 
 function loadContent() {
+    console.log("loadContent");
     const contentContainer = document.getElementById('maintenance-content');
     
     // Clear existing content
@@ -277,6 +294,13 @@ function loadContent() {
     if (state.currentSection === 'view-requests') {
         loadMaintenanceRequests();
     }
+    
+    else if (state.currentSection === 'create-request') {
+        console.log('create-request');
+        loadMachines();
+        setupMaintenanceRequestForm();
+    }
+    console.log("HELLO");
 }
 
 async function loadMaintenanceRequests() {
@@ -335,6 +359,12 @@ function showSection(sectionId) {
     if (sectionId === 'view-requests') {
         loadMaintenanceRequests();
     }
+    
+    // Load machines if switching to create request section
+    if (sectionId === 'create-request') {
+        loadMachines();
+        setupMaintenanceRequestForm();
+    }
 }
 
 // ============================================================================
@@ -386,3 +416,116 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSidebar();
     loadContent();
 });
+
+async function loadMachines() {
+    const machineSelect = document.getElementById('machine-select');
+    if (!machineSelect) return;
+    
+    // Show loading state
+    machineSelect.innerHTML = '<option value="">Makineler yükleniyor...</option>';
+    machineSelect.disabled = true;
+    
+    try {
+        const machines = await fetchMachines();
+        populateMachinesDropdown(machines);
+    } catch (error) {
+        machineSelect.innerHTML = `
+            <option value="">Makine yüklenirken hata oluştu</option>
+        `;
+        machineSelect.disabled = true;
+        console.error('Error loading machines:', error);
+    }
+}
+
+function populateMachinesDropdown(machines) {
+    const machineSelect = document.getElementById('machine-select');
+    if (!machineSelect) return;
+    
+    // Clear existing options except the first placeholder
+    machineSelect.innerHTML = '<option value="">Makine seçin...</option>';
+    
+    // Add machine options
+    machines.forEach(machine => {
+        const option = document.createElement('option');
+        option.value = machine.id;
+        option.textContent = machine.name || `Makine ${machine.id}`;
+        machineSelect.appendChild(option);
+    });
+    
+    // Enable the select if it was disabled during loading
+    machineSelect.disabled = false;
+}
+
+function setupMaintenanceRequestForm() {
+    const form = document.getElementById('maintenance-request-form');
+    if (!form) return;
+    
+    // Add event listener for request type changes
+    const requestTypeSelect = document.getElementById('request-type');
+    const faultOperableContainer = document.getElementById('fault-operable-container');
+    
+    if (requestTypeSelect && faultOperableContainer) {
+        requestTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'fault') {
+                faultOperableContainer.style.display = 'block';
+            } else {
+                faultOperableContainer.style.display = 'none';
+            }
+        });
+    }
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const machineId = document.getElementById('machine-select').value;
+        const requestType = document.getElementById('request-type').value;
+        const description = document.getElementById('description').value;
+        const isOperable = document.getElementById('is-operable').checked;
+        
+        if (!machineId || !requestType || !description) {
+            alert('Lütfen tüm alanları doldurun.');
+            return;
+        }
+        
+        try {
+            await createMaintenanceRequest({
+                machine: machineId,
+                request_type: requestType,
+                description: description,
+                is_breaking: !isOperable
+            });
+            
+            // Reset form
+            form.reset();
+            // Hide the operable checkbox after form reset
+            if (faultOperableContainer) {
+                faultOperableContainer.style.display = 'none';
+            }
+            alert('Bakım talebi başarıyla oluşturuldu.');
+            
+            // Switch to view requests to see the new request
+            showSection('view-requests');
+            
+        } catch (error) {
+            console.error('Error creating maintenance request:', error);
+            alert('Bakım talebi oluşturulurken hata oluştu.');
+        }
+    });
+}
+
+async function createMaintenanceRequest(requestData) {
+    const response = await authedFetch(`${backendBase}/machines/faults/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to create maintenance request');
+    }
+    
+    return response.json();
+}
