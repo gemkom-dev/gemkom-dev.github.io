@@ -491,7 +491,7 @@ function setupMaintenanceRequestForm() {
         try {
             await createMaintenanceRequest({
                 machine: machineId,
-                request_type: requestType,
+                is_maintenance: requestType === 'maintenance',
                 description: description,
                 is_breaking: !isOperable
             });
