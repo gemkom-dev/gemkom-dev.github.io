@@ -138,6 +138,8 @@ function createViewRequestsSection() {
                                     <button type="button" class="btn btn-outline-primary active" data-filter="all">Tümü</button>
                                     <button type="button" class="btn btn-outline-primary" data-filter="maintenance">Bakım</button>
                                     <button type="button" class="btn btn-outline-primary" data-filter="fault">Arıza</button>
+                                    <button type="button" class="btn btn-outline-danger" data-filter="breaking">Duruşta</button>
+                                    <button type="button" class="btn btn-outline-success" data-filter="completed">Tamamlanan</button>
                                 </div>
                             </div>
                             
@@ -150,6 +152,31 @@ function createViewRequestsSection() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resolve Modal -->
+        <div class="modal fade" id="resolveModal" tabindex="-1" aria-labelledby="resolveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resolveModalLabel">Talep Çözümü</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="resolve-form">
+                            <div class="mb-3">
+                                <label for="resolution-description" class="form-label">Çözüm Açıklaması</label>
+                                <textarea class="form-control" id="resolution-description" rows="4" 
+                                          placeholder="Talep nasıl çözüldü? Detayları açıklayın..." required></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button type="button" class="btn btn-success" id="confirm-resolve">Çözüldü Olarak İşaretle</button>
                     </div>
                 </div>
             </div>
@@ -178,14 +205,21 @@ function renderMaintenanceRequests() {
 }
 
 function filterRequests(requests, filter) {
-    if (filter === 'all') {
-        return requests;
-    }
-    // Assuming the API response has a type field or we can determine type from other fields
-    // You may need to adjust this based on the actual API response structure
     return requests.filter(request => {
-        // This is a placeholder - adjust based on actual API response
-        return true; // For now, show all requests
+        switch (filter) {
+            case 'maintenance':
+                return request.is_maintenance === true && request.resolved_at === null;
+            case 'fault':
+                return request.is_maintenance === false && request.resolved_at === null;
+            case 'breaking':
+                return request.is_breaking === true && request.resolved_at === null;
+            case 'completed':
+                return request.resolved_at !== null;
+            case 'all':
+                return request.resolved_at === null
+            default:
+                return true;
+        }
     });
 }
 
@@ -240,6 +274,15 @@ function createRequestCard(request) {
         </div>
     `;
     
+    // Add resolve button for unresolved requests
+    const resolveButton = !request.resolved_at ? `
+        <div class="mt-2">
+            <button class="btn btn-success btn-sm" onclick="resolveRequest(${request.id})">
+                <i class="fas fa-check"></i> Çözüldü Olarak İşaretle
+            </button>
+        </div>
+    ` : '';
+    
     return `
         <div class="card mb-3">
             <div class="card-body">
@@ -261,6 +304,7 @@ function createRequestCard(request) {
                         <div class="card-text mt-2">
                             ${collapsibleDescription}
                         </div>
+                        ${resolveButton}
                     </div>
                     <div class="col-md-4 text-end">
                         <span class="badge bg-${statusClass}">
@@ -293,6 +337,7 @@ function loadContent() {
     // Load maintenance requests if viewing that section
     if (state.currentSection === 'view-requests') {
         loadMaintenanceRequests();
+        setupResolveModal();
     }
     
     else if (state.currentSection === 'create-request') {
@@ -328,10 +373,33 @@ function setupFilterHandlers() {
     filterButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             // Remove active class from all buttons
-            filterButtons.forEach(btn => btn.classList.remove('active'));
+            filterButtons.forEach(btn => {
+                btn.classList.remove('active');
+                // Reset button styles
+                if (btn.dataset.filter === 'breaking') {
+                    btn.classList.remove('btn-danger');
+                    btn.classList.add('btn-outline-danger');
+                } else if (btn.dataset.filter === 'completed') {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-success');
+                } else {
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline-primary');
+                }
+            });
             
-            // Add active class to clicked button
+            // Add active class to clicked button and update styles
             e.target.classList.add('active');
+            if (e.target.dataset.filter === 'breaking') {
+                e.target.classList.remove('btn-outline-danger');
+                e.target.classList.add('btn-danger');
+            } else if (e.target.dataset.filter === 'completed') {
+                e.target.classList.remove('btn-outline-success');
+                e.target.classList.add('btn-success');
+            } else {
+                e.target.classList.remove('btn-outline-primary');
+                e.target.classList.add('btn-primary');
+            }
             
             // Update filter and re-render
             state.currentFilter = e.target.dataset.filter;
@@ -358,6 +426,7 @@ function showSection(sectionId) {
     // Load maintenance requests if switching to that section
     if (sectionId === 'view-requests') {
         loadMaintenanceRequests();
+        setupResolveModal();
     }
     
     // Load machines if switching to create request section
@@ -459,11 +528,18 @@ function populateMachinesDropdown(machines) {
 function setupMaintenanceRequestForm() {
     const form = document.getElementById('maintenance-request-form');
     if (!form) return;
-    
-    // Add event listener for request type changes
-    const requestTypeSelect = document.getElementById('request-type');
-    const faultOperableContainer = document.getElementById('fault-operable-container');
-    
+
+    // Remove previous event listeners by replacing the form
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    // Get new references from the new form
+    const requestTypeSelect = newForm.querySelector('#request-type');
+    const faultOperableContainer = newForm.querySelector('#fault-operable-container');
+    const machineSelect = newForm.querySelector('#machine-select');
+    const descriptionInput = newForm.querySelector('#description');
+    const isOperableCheckbox = newForm.querySelector('#is-operable');
+
     if (requestTypeSelect && faultOperableContainer) {
         requestTypeSelect.addEventListener('change', (e) => {
             if (e.target.value === 'fault') {
@@ -473,21 +549,20 @@ function setupMaintenanceRequestForm() {
             }
         });
     }
-    
-    form.addEventListener('submit', async (e) => {
+
+    newForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const formData = new FormData(form);
-        const machineId = document.getElementById('machine-select').value;
-        const requestType = document.getElementById('request-type').value;
-        const description = document.getElementById('description').value;
-        const isOperable = document.getElementById('is-operable').checked;
-        
+
+        const machineId = machineSelect ? machineSelect.value : '';
+        const requestType = requestTypeSelect ? requestTypeSelect.value : '';
+        const description = descriptionInput ? descriptionInput.value : '';
+        const isOperable = isOperableCheckbox ? isOperableCheckbox.checked : true;
+
         if (!machineId || !requestType || !description) {
             alert('Lütfen tüm alanları doldurun.');
             return;
         }
-        
+
         try {
             await createMaintenanceRequest({
                 machine: machineId,
@@ -495,18 +570,18 @@ function setupMaintenanceRequestForm() {
                 description: description,
                 is_breaking: !isOperable
             });
-            
+
             // Reset form
-            form.reset();
+            newForm.reset();
             // Hide the operable checkbox after form reset
             if (faultOperableContainer) {
                 faultOperableContainer.style.display = 'none';
             }
             alert('Bakım talebi başarıyla oluşturuldu.');
-            
+
             // Switch to view requests to see the new request
             showSection('view-requests');
-            
+
         } catch (error) {
             console.error('Error creating maintenance request:', error);
             alert('Bakım talebi oluşturulurken hata oluştu.');
@@ -528,4 +603,102 @@ async function createMaintenanceRequest(requestData) {
     }
     
     return response.json();
+}
+
+// ============================================================================
+// RESOLVE FUNCTIONALITY
+// ============================================================================
+
+let currentResolveRequestId = null;
+
+// Make resolveRequest function globally available
+window.resolveRequest = function(requestId) {
+    currentResolveRequestId = requestId;
+    const resolveModal = new bootstrap.Modal(document.getElementById('resolveModal'));
+    resolveModal.show();
+};
+
+async function resolveMaintenanceRequest(requestId, resolutionDescription) {
+    const now = new Date().toISOString();
+    
+    const response = await authedFetch(`${backendBase}/machines/faults/${requestId}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            resolved_at: now,
+            resolved_by: getCurrentUserId(), // You'll need to implement this function
+            resolution_description: resolutionDescription
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to resolve maintenance request');
+    }
+    
+    return response.json();
+}
+
+function getCurrentUserId() {
+    // Get user ID from localStorage user data
+    const userData = localStorage.getItem('user');
+    if (userData) {
+        const user = JSON.parse(userData);
+        return user.id;
+    }
+    return null;
+}
+
+// Setup resolve modal handlers
+function setupResolveModal() {
+    const confirmResolveBtn = document.getElementById('confirm-resolve');
+    const resolutionDescription = document.getElementById('resolution-description');
+    
+    if (confirmResolveBtn && resolutionDescription) {
+        // Remove previous event listeners by replacing the button
+        const newBtn = confirmResolveBtn.cloneNode(true);
+        confirmResolveBtn.parentNode.replaceChild(newBtn, confirmResolveBtn);
+        newBtn.addEventListener('click', async () => {
+            const description = resolutionDescription.value.trim();
+            
+            if (!description) {
+                alert('Lütfen çözüm açıklaması girin.');
+                return;
+            }
+            
+            if (!currentResolveRequestId) {
+                alert('Talep ID bulunamadı.');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                newBtn.disabled = true;
+                newBtn.textContent = 'İşleniyor...';
+                
+                await resolveMaintenanceRequest(currentResolveRequestId, description);
+                
+                // Close modal
+                const resolveModal = bootstrap.Modal.getInstance(document.getElementById('resolveModal'));
+                resolveModal.hide();
+                
+                // Reset form
+                resolutionDescription.value = '';
+                currentResolveRequestId = null;
+                
+                // Refresh the requests list
+                await loadMaintenanceRequests();
+                
+                alert('Talep başarıyla çözüldü olarak işaretlendi.');
+                
+            } catch (error) {
+                console.error('Error resolving request:', error);
+                alert('Talep çözülürken hata oluştu.');
+            } finally {
+                newBtn.disabled = false;
+                newBtn.textContent = 'Çözüldü Olarak İşaretle';
+            }
+        });
+    }
 }
