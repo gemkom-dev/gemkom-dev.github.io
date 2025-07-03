@@ -20,11 +20,17 @@ async function handleMesaiTalebiSubmit(e) {
     const file = document.getElementById('excel').files[0];
     const errorDiv = document.getElementById('mesai-talebi-error');
     const successDiv = document.getElementById('mesai-talebi-success');
+    const submitBtn = document.querySelector('#mesai-talebi-form button[type="submit"]');
+    submitBtn.disabled = true;
+    const originalBtnHtml = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Gönderiliyor...';
     errorDiv.style.display = 'none';
     successDiv.style.display = 'none';
     if (!departman || !start || !end || !file) {
         errorDiv.textContent = 'Tüm alanları doldurun ve dosya seçin.';
         errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnHtml;
         return;
     }
     try {
@@ -51,6 +57,8 @@ async function handleMesaiTalebiSubmit(e) {
         if (!rows.length) {
             errorDiv.textContent = 'Excel dosyası boş veya okunamadı!';
             errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
             return;
         }
         // Prepare Epic (parent issue)
@@ -73,6 +81,8 @@ async function handleMesaiTalebiSubmit(e) {
         if (!epicRes.ok) {
             errorDiv.textContent = 'Epic oluşturulamadı!';
             errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnHtml;
             return;
         }
         const epicData = await epicRes.json();
@@ -121,4 +131,6 @@ async function handleMesaiTalebiSubmit(e) {
         errorDiv.textContent = 'Bir hata oluştu. Lütfen tekrar deneyin.';
         errorDiv.style.display = 'block';
     }
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalBtnHtml;
 } 
