@@ -109,6 +109,16 @@ export function showFinishedTimers() {
         });
     });
 
+    // Add Enter key support for all filter inputs
+    document.querySelectorAll('#finished-timers-filters input, #finished-timers-filters select').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('fetch-finished-timers-btn').click();
+            }
+        });
+    });
+
     document.getElementById('fetch-finished-timers-btn').addEventListener('click', async () => {
         const user = document.getElementById('user').value.trim();
         const issueKey = document.getElementById('issue_key').value.trim();
