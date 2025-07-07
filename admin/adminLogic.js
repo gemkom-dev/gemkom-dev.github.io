@@ -32,7 +32,7 @@ export function setupAdminSidebar(sidebarRoot) {
         sidebar.addItem('Özet');
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi', 'Çoklu Kullanıcı Ekle'] });
         sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Detaylı Rapor', 'Makine Listesi'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Grup Rapor', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
     } else if (isLead() && user.team === 'machining') {
         sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Biten Zamanlayıcılar', 'Makine Listesi'] });
@@ -89,9 +89,9 @@ export function setupSidebarEventListeners() {
         mesaiTaleplerimItem.addEventListener('click', handleSidebarClick('Mesai Taleplerim', showMesaiTaleplerim));
     }
 
-    const detayliRaporItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Detaylı Rapor');
+    const detayliRaporItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Grup Rapor');
     if (detayliRaporItem) {
-        detayliRaporItem.addEventListener('click', handleSidebarClick('Detaylı Rapor', showMachiningDetailedReport));
+        detayliRaporItem.addEventListener('click', handleSidebarClick('Grup Rapor', showMachiningDetailedReport));
     }
 
     const finishedTimersItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Biten Zamanlayıcılar');
@@ -118,7 +118,7 @@ export function restoreLastView() {
             case 'Aktif Zamanlayıcılar': showMachiningLiveReport(); break;
             case 'Makine Listesi': showMachineList(); break;
             case 'Jira Ayarları': showJiraSettings(); break;
-            case 'Detaylı Rapor': showMachiningDetailedReport(); break;
+            case 'Grup Rapor': showMachiningDetailedReport(); break;
             case 'Biten Zamanlayıcılar': showFinishedTimers(); break;
             case 'İşler': showTaskListSection(); break;
             // Add more as needed

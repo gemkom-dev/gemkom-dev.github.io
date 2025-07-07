@@ -21,7 +21,7 @@ export function showMachiningDetailedReport() {
     mainContent.innerHTML = `
         <div class="row mb-3">
             <div class="col-12">
-                <h3>Detaylı Talaşlı İmalat Raporu</h3>
+                <h3>Gruplu Talaşlı İmalat Raporu</h3>
                 <form id="detailed-report-filters" class="row g-3 align-items-end">
                     <div class="col-md-2">
                         <label for="group_by" class="form-label">Gruplama</label>
