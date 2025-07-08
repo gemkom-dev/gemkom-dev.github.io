@@ -2,9 +2,7 @@
 // Core business logic for task functionality
 
 import { state } from '../machiningService.js';
-import { getSyncedNow } from '../../timeService.js';
-import { formatTime } from '../machiningService.js';
-import { updateTimerDisplay, setActiveTimerUI, setInactiveTimerUI } from './taskUI.js';
+import { updateTimerDisplay} from './taskUI.js';
 import { performSoftReload } from './taskState.js';
 
 // ============================================================================
@@ -13,16 +11,11 @@ import { performSoftReload } from './taskState.js';
 
 export function setupTimerHandlers(restoring = false) {
     if (restoring) {
-        state.startTime = parseInt(state.startTime);
-        state.timerActive = true;
+        state.currentTimer.start_time = parseInt(state.currentTimer.start_time);
         updateTimerDisplay();
         state.intervalId = setInterval(updateTimerDisplay, 1000);
-        setActiveTimerUI();
     } else {
-        setInactiveTimerUI();
-        state.timerActive = false;
-        state.startTime = null;
-        localStorage.removeItem('jira-timer-state');
+        state.currentTimer.start_time = null;
     }
 }
 
@@ -39,7 +32,6 @@ export async function handleSoftReload() {
             setupTimerHandlers(true);
         } else {
             // No timer was restored, set up inactive state
-            setInactiveTimerUI();
             setupTimerHandlers(false);
         }
     } catch (error) {

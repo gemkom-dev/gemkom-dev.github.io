@@ -1,7 +1,7 @@
 // components/taskTimerModals.js
 // Generic modals for task timer/detail views (manual time, fault report)
 
-import { formatTime, formatJiraDate } from '../machining/machiningService.js';
+import { formatTime, formatJiraDate } from '../helpers.js';
 import { createMaintenanceRequest } from '../maintenance/maintenance.js';
 
 export function createManualTimeModal() {

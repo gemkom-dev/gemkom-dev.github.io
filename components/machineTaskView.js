@@ -85,6 +85,63 @@ export async function createMachineTaskView({
     function renderTaskList(tasks) {
         const ul = container.querySelector('#task-list');
         ul.innerHTML = '';
+        // Add placeholder task at the top
+        const placeholderCard = document.createElement('div');
+        placeholderCard.className = 'task-card placeholder-task';
+        placeholderCard.style.background = '#ffeeba'; // Distinct color
+        placeholderCard.style.cursor = 'pointer';
+        placeholderCard.innerHTML = '<h3>Bekletme Nedeniyle İş Başlat</h3><p>Makineyi bekletme (ariza, malzeme bekleme, vs) için tıklayın</p>';
+        placeholderCard.onclick = async () => {
+            // Show modal to select reason_code
+            let modal = document.getElementById('hold-task-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'hold-task-modal';
+                modal.innerHTML = `
+                <div class="modal fade" tabindex="-1" id="hold-task-modal-inner">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title">Bekletme Nedeni Seç</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                      </div>
+                      <div class="modal-body">
+                        <select id="reason-code-select" class="form-select"><option>Yükleniyor...</option></select>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button type="button" class="btn btn-primary" id="select-reason-code-btn">Devam</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>`;
+                document.body.appendChild(modal);
+            }
+            // Fetch reason codes
+            const select = document.getElementById('reason-code-select');
+            select.innerHTML = '<option>Yükleniyor...</option>';
+            try {
+                const backendBase = (await import('../base.js')).backendBase;
+                const { authedFetch } = await import('../authService.js');
+                const resp = await authedFetch(`${backendBase}/machining/hold-tasks/`);
+                const codes = await resp.json();
+                select.innerHTML = codes.map(code => `<option value="${code.key}">${code.name || code.job_no}</option>`).join('');
+            } catch (err) {
+                select.innerHTML = '<option>Bekletme nedenleri alınamadı</option>';
+            }
+            // Show modal
+            const bsModal = new bootstrap.Modal(document.getElementById('hold-task-modal-inner'));
+            bsModal.show();
+            document.getElementById('select-reason-code-btn').onclick = () => {
+                const reasonCode = select.value;
+                const reasonName = select.options[select.selectedIndex]?.text || reasonCode;
+                if (!reasonCode) return;
+                // Go to tasks page with reason_code as issue_key and pass name
+                window.location.href = `${taskDetailBasePath}?key=${encodeURIComponent(reasonCode)}&name=${encodeURIComponent(reasonName)}&hold=1`;
+            };
+        };
+        ul.appendChild(placeholderCard);
+        // Render normal tasks
         tasks.forEach(task => {
             const card = document.createElement('div');
             card.className = 'task-card';

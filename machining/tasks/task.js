@@ -1,19 +1,19 @@
 // --- task.js ---
 // Entry point for task page - initialization and coordination
 
-import { state } from '../machiningService.js';
 import { initNavbar } from '../../components/navbar.js';
 import { guardRoute, navigateTo, ROUTES } from '../../authService.js';
 import { 
     getTaskKeyFromURL, 
-    fetchTaskDetails
+    fetchTaskDetails,
+    getActiveTimer
 } from './taskApi.js';
 import { 
-    initializeTaskState,
-    getStoredTask
+    setCurrentIssueState,
+    setCurrentTimerState
 } from './taskState.js';
 import { 
-    setupTaskInfoDisplay
+    setupTaskDisplay
 } from './taskUI.js';
 import { setupAllHandlers } from './taskHandlers.js';
 import { handleSoftReload } from './taskLogic.js';
@@ -38,30 +38,24 @@ async function initializeTaskView() {
         return;
     }
     
-    try {
-        // Try to load task from sessionStorage first
-        let issue = getStoredTask();
+
+    let issue = await fetchTaskDetails(taskKey);
+    setCurrentIssueState(issue);
+
+    const hasActiveTimer = await getActiveTimer(taskKey);
+    setCurrentTimerState(hasActiveTimer);
+    
+    // Setup UI
+    setupTaskDisplay(hasActiveTimer);
+    
+    // Setup handlers based on timer state
+    setupAllHandlers(hasActiveTimer);
         
-        // If not in storage or wrong task, fetch from API
-        if (!issue || issue.key !== taskKey) {
-            console.log('Task details not in session storage, fetching from API.');
-            issue = await fetchTaskDetails(taskKey);
-        }
-        
-        // Initialize task state
-        const { hasActiveTimer, isUnderMaintenance } = await initializeTaskState(taskKey, issue);
-        
-        // Setup UI
-        setupTaskInfoDisplay();
-        
-        // Setup handlers based on timer state
-        setupAllHandlers(hasActiveTimer);
-        
-    } catch (error) {
-        console.error('Error initializing task view:', error);
-        alert('Task not found');
-        navigateTo(ROUTES.MACHINING);
-    }
+    // } catch (error) {
+    //     console.error('Error initializing task view:', error);
+    //     alert('Task not found');
+    //     navigateTo(ROUTES.MACHINING);
+    // }
 }
 
 // Initialize when DOM is loaded

@@ -627,8 +627,6 @@ async function resolveMaintenanceRequest(requestId, resolutionDescription) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            resolved_at: now,
-            resolved_by: getCurrentUserId(), // You'll need to implement this function
             resolution_description: resolutionDescription
         })
     });
@@ -638,16 +636,6 @@ async function resolveMaintenanceRequest(requestId, resolutionDescription) {
     }
     
     return response.json();
-}
-
-function getCurrentUserId() {
-    // Get user ID from localStorage user data
-    const userData = localStorage.getItem('user');
-    if (userData) {
-        const user = JSON.parse(userData);
-        return user.id;
-    }
-    return null;
 }
 
 // Setup resolve modal handlers

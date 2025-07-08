@@ -1,5 +1,5 @@
 // --- timerWidget.js ---
-import { formatTime } from '../machining/machiningService.js';
+import { formatTime } from '../helpers.js';
 import { syncServerTime, getSyncedNow } from '../timeService.js';
 import { backendBase } from '../base.js';
 import { authedFetch, navigateTo, ROUTES } from '../authService.js';

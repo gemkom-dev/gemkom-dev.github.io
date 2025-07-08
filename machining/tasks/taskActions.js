@@ -1,22 +1,22 @@
 // --- taskActions.js ---
 // Button action handlers for task functionality
 
-import { state, saveTimerState, stopTimerShared, logTimeToJiraShared } from '../machiningService.js';
+import { state, stopTimerShared, logTimeToJiraShared } from '../machiningService.js';
 import { syncServerTime, getSyncedNow } from '../../timeService.js';
 import { navigateTo, ROUTES } from '../../authService.js';
 import { startTimer, markTaskAsDone } from './taskApi.js';
 import { showManualTimeModal, createFaultReportModal } from '../../components/taskTimerModals.js';
-import { setActiveTimerUI, setInactiveTimerUI, updateTimerDisplay } from './taskUI.js';
+import { updateTimerDisplay } from './taskUI.js';
 import { performSoftReload } from './taskState.js';
 import { TimerWidget } from '../../components/timerWidget.js';
-import { checkMachineMaintenance, createManualTimeEntry } from './taskApi.js';
+import { checkMachineMaintenance, createManualTimeEntry, getMachine } from './taskApi.js';
 
 // ============================================================================
 // MAINTENANCE CHECKING
 // ============================================================================
 
 async function checkMaintenanceAndAlert() {
-    if (await checkMachineMaintenance(sessionStorage.getItem('selectedMachineId'))) {
+    if (await checkMachineMaintenance(state.currentMachine.id)) {
         alert('Bu makine bakımda. İşlem yapamazsınız.');
         navigateTo(ROUTES.MACHINING);
         return true;
@@ -39,11 +39,14 @@ export function setupStartStopHandler() {
 }
 
 async function handleStartStopClick() {
-    if (await checkMaintenanceAndAlert()) {
+    const machine = await getMachine(state.currentMachine.id);
+    if (machine.is_under_maintenance) {
+        alert('Bu makine bakımda. İşlem yapamazsınız.');
+        navigateTo(ROUTES.MACHINING);
         return;
     }
-    console.log("handleStartStopClick");
-    if (!state.timerActive) {
+    setupTaskDisplay(machine.has_active_timer);
+    if (!machine.has_active_timer) {
         await handleStartTimer();
     } else {
         await handleStopTimer();
@@ -52,25 +55,13 @@ async function handleStartStopClick() {
 
 async function handleStartTimer() {
     try {
-        await syncServerTime();
-        
-        // Start timer
-        state.startTime = getSyncedNow();
-        state.timerActive = true;
-        setActiveTimerUI();
         state.intervalId = setInterval(updateTimerDisplay, 1000);
-        saveTimerState();
-        
-        const startData = await startTimer();
-        state.currentTimerId = startData.id;
-        
-        // Trigger timer widget update
+        await startTimer();
         TimerWidget.triggerUpdate();
         
     } catch (error) {
         console.error('Error starting timer:', error);
         alert("Zamanlayıcı başlatılırken hata oluştu.");
-        setInactiveTimerUI();
     }
 }
 
@@ -82,29 +73,25 @@ async function handleStopTimer() {
     let elapsed = Math.round((getSyncedNow() - state.startTime) / 1000);
     if (elapsed < 60) elapsed = 60;
     
-    state.finish_time = getSyncedNow();
     state.timerActive = false;
     startBtn.disabled = true;
     startBtn.textContent = 'İşleniyor...';
-    saveTimerState();
     
     try {
         const stopSuccess = await stopTimerShared({ 
-            timerId: state.currentTimerId, 
-            finishTime: state.finish_time, 
+            timerId: state.currentTimer.id, 
+            finishTime: getSyncedNow(),
             syncToJira: true 
         });
         
         if (stopSuccess) {
             const logged = await logTimeToJiraShared({ 
-                issueKey: state.currentIssueKey,
+                issueKey: state.currentIssue.key,
                 startTime: state.startTime, 
                 elapsedSeconds: elapsed 
             });
             
             if (logged) {
-                // Reset UI immediately after successful stop
-                setInactiveTimerUI();
                 
                 // Trigger timer widget update
                 TimerWidget.triggerUpdate();
@@ -112,16 +99,13 @@ async function handleStopTimer() {
                 await performSoftReload();
             } else {
                 alert("Hata oluştu. Lütfen tekrar deneyin.");
-                setInactiveTimerUI();
             }
         } else {
             alert("Zamanlayıcı durdurulamadı.");
-            setInactiveTimerUI();
         }
     } catch (error) {
         console.error('Error stopping timer:', error);
         alert("Hata oluştu. Lütfen tekrar deneyin.");
-        setInactiveTimerUI();
     }
 }
 
@@ -144,7 +128,7 @@ async function handleStopOnlyClick() {
     
     try {
         const success = await stopTimerShared({ 
-            timerId: state.currentTimerId, 
+            timerId: state.currentTimer.id, 
             finishTime: getSyncedNow(), 
             syncToJira: false 
         });
@@ -181,7 +165,7 @@ export function setupMarkDoneHandler() {
 async function handleMarkDoneClick() {
     if (await checkMaintenanceAndAlert()) return;
     
-    if (!confirm(`${state.selectedIssue.customfield_10187} adetin hepsini tamamladınız mı?`)) {
+    if (!confirm(`${state.currentIssue.customfield_10187} adetin hepsini tamamladınız mı?`)) {
         return;
     }
     

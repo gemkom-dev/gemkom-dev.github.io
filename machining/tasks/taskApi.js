@@ -2,8 +2,9 @@
 // API calls and data fetching for task functionality
 
 import { state } from '../machiningService.js';
-import { proxyBase, backendBase } from '../../base.js';
+import { proxyBase, backendBase, jiraBase } from '../../base.js';
 import { authedFetch, navigateTo } from '../../authService.js';
+import { mapJiraIssueToTask } from '../../helpers.js';
 
 // ============================================================================
 // TASK DATA FETCHING
@@ -14,16 +15,39 @@ export function getTaskKeyFromURL() {
     return urlParams.get('key');
 }
 
-export async function fetchTaskDetails(taskKey) {
-    const response = await authedFetch(proxyBase + encodeURIComponent(`${state.base}/rest/api/3/issue/${taskKey}`), {
-        headers: { 'Content-Type': 'application/json' }
-    });
-    
-    if (!response.ok) {
-        throw new Error('Task not found');
+export async function fetchTaskDetails(taskKey=null) {
+    const storedTaskJSON = sessionStorage.getItem('selectedTask');
+    if (storedTaskJSON) {
+        try {
+            return JSON.parse(storedTaskJSON);
+        } catch (error) {
+            console.error('Error parsing stored task:', error);
+        }
+    }
+    if(params.get('hold') !== '1'){
+        const response = await authedFetch(proxyBase + encodeURIComponent(`${jiraBase}/rest/api/3/issue/${taskKey}`), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Task not found');
+        }
+        
+        return mapJiraIssueToTask(response.json());
+    } else {
+        const params = new URLSearchParams(window.location.search);
+        const issue = {
+            key: params.get('key'),
+            name: params.get('name') || params.get('key'),                    // Task name
+            job_no: params.get('name') || params.get('key'),           // RM260-01-12
+            image_no: null,         // 8.7211.0005
+            position_no: null,      // 107
+            quantity: null,         // 6
+            machine: null,   // COLLET (optional)
+        };
+        return issue;
     }
     
-    return response.json();
 }
 
 export async function getActiveTimer(taskKey) {
@@ -48,18 +72,19 @@ export async function startTimer() {
         navigateTo(ROUTES.MACHINING);
         return;
     }
+    const timerData = {
+        issue_key: state.currentIssue.key,
+        start_time: getSyncedNow(),
+        machine: state.currentMachine.name,
+        machine_fk: state.currentMachine.id,
+        job_no: state.currentIssue.job_no,
+        image_no: state.currentIssue.image_no,
+        position_no: state.currentIssue.position_no,
+        quantity: state.currentIssue.quantity
+    }
     const response = await authedFetch(`${backendBase}/machining/timers/start/`, {
         method: 'POST',
-        body: JSON.stringify({
-            issue_key: state.currentIssueKey,
-            start_time: state.startTime,
-            machine: state.selectedIssue.customfield_11411?.value || '',
-            machine_fk: sessionStorage.getItem('selectedMachineId'),
-            job_no: state.selectedIssue.customfield_10117 || '',
-            image_no: state.selectedIssue.customfield_10184 || '',
-            position_no: state.selectedIssue.customfield_10185 || '',
-            quantity: state.selectedIssue.customfield_10187|| ''
-        })
+        body: JSON.stringify(timerData)
     });
     
     return response.json();
@@ -73,15 +98,15 @@ export async function createManualTimeEntry(startDateTime, endDateTime) {
     const response = await authedFetch(`${backendBase}/machining/manual-time/`, {
         method: 'POST',
         body: JSON.stringify({
-            issue_key: state.currentIssueKey,
+            issue_key: state.currentIssue.key,
             start_time: startDateTime.getTime(),
             finish_time: endDateTime.getTime(),
-            machine: state.selectedIssue.customfield_11411?.value || '',
+            machine: state.currentIssue.customfield_11411?.value || '',
             machine_fk: sessionStorage.getItem('selectedMachineId'),
-            job_no: state.selectedIssue.customfield_10117 || '',
-            image_no: state.selectedIssue.customfield_10184 || '',
-            position_no: state.selectedIssue.customfield_10185 || '',
-            quantity: state.selectedIssue.customfield_10187 || ''
+            job_no: state.currentIssue.customfield_10117 || '',
+            image_no: state.currentIssue.customfield_10184 || '',
+            position_no: state.currentIssue.customfield_10185 || '',
+            quantity: state.currentIssue.customfield_10187 || ''
         })
     });
     
@@ -93,7 +118,7 @@ export async function createManualTimeEntry(startDateTime, endDateTime) {
 // ============================================================================
 
 export async function markTaskAsDone() {
-    const url = `${state.base}/rest/api/3/issue/${state.currentIssueKey}/transitions`;
+    const url = `${jiraBase}/rest/api/3/issue/${state.currentIssue.key}/transitions`;
     const response = await authedFetch(proxyBase + encodeURIComponent(url), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -109,7 +134,7 @@ export async function markTaskAsDone() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            key: state.currentIssueKey
+            key: state.currentIssue.key
         })
     });
     
@@ -117,20 +142,22 @@ export async function markTaskAsDone() {
 }
 
 
+export async function getMachine(machineId) {
+    const response = await authedFetch(`${backendBase}/machines/${machineId}/`);
+    return response.json();
+}
 
 // ============================================================================
 // MAINTENANCE CHECKING
 // ============================================================================
 
 export async function checkMachineMaintenance(machineId) {
-    const response = await authedFetch(`${backendBase}/machines/?used_in=machining`);
+    const response = await authedFetch(`${backendBase}/machines/${machineId}/`);
     
     if (!response.ok) {
         return false;
     }
     
-    const machines = await response.json();
-    // Find the machine by ID and check if it's under maintenance
-    const machine = machines.find(machine => machine.id === parseInt(machineId));
+    const machine = await response.json();
     return machine ? machine.is_under_maintenance : false;
 } 
