@@ -10,13 +10,15 @@ import {
 } from './taskApi.js';
 import { 
     setCurrentIssueState,
-    setCurrentTimerState
+    setCurrentTimerState,
+    setCurrentMachineState
 } from './taskState.js';
 import { 
     setupTaskDisplay
 } from './taskUI.js';
 import { setupAllHandlers } from './taskHandlers.js';
 import { handleSoftReload } from './taskLogic.js';
+import { state } from '../machiningService.js';
 
 // ============================================================================
 // INITIALIZATION
@@ -28,8 +30,6 @@ async function initializeTaskView() {
     }
     
     initNavbar();
-    
-    // Set up soft reload listener
     window.addEventListener('softReload', handleSoftReload);
     
     const taskKey = getTaskKeyFromURL();
@@ -37,25 +37,15 @@ async function initializeTaskView() {
         navigateTo(ROUTES.MACHINING);
         return;
     }
-    
-
     let issue = await fetchTaskDetails(taskKey);
-    setCurrentIssueState(issue);
-
     const hasActiveTimer = await getActiveTimer(taskKey);
+    setCurrentIssueState(issue);
     setCurrentTimerState(hasActiveTimer);
-    
-    // Setup UI
+    setCurrentMachineState();
+
     setupTaskDisplay(hasActiveTimer);
-    
-    // Setup handlers based on timer state
     setupAllHandlers(hasActiveTimer);
-        
-    // } catch (error) {
-    //     console.error('Error initializing task view:', error);
-    //     alert('Task not found');
-    //     navigateTo(ROUTES.MACHINING);
-    // }
+    console.log(state);
 }
 
 // Initialize when DOM is loaded

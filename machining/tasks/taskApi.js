@@ -16,6 +16,8 @@ export function getTaskKeyFromURL() {
 }
 
 export async function fetchTaskDetails(taskKey=null) {
+    const params = new URLSearchParams(window.location.search);
+
     const storedTaskJSON = sessionStorage.getItem('selectedTask');
     if (storedTaskJSON) {
         try {
@@ -24,7 +26,7 @@ export async function fetchTaskDetails(taskKey=null) {
             console.error('Error parsing stored task:', error);
         }
     }
-    if(params.get('hold') !== '1'){
+    else if(params.get('hold') !== '1'){
         const response = await authedFetch(proxyBase + encodeURIComponent(`${jiraBase}/rest/api/3/issue/${taskKey}`), {
             headers: { 'Content-Type': 'application/json' }
         });
@@ -33,19 +35,17 @@ export async function fetchTaskDetails(taskKey=null) {
             throw new Error('Task not found');
         }
         
-        return mapJiraIssueToTask(response.json());
+        return mapJiraIssueToTask(await response.json());
     } else {
-        const params = new URLSearchParams(window.location.search);
-        const issue = {
-            key: params.get('key'),
-            name: params.get('name') || params.get('key'),                    // Task name
-            job_no: params.get('name') || params.get('key'),           // RM260-01-12
-            image_no: null,         // 8.7211.0005
-            position_no: null,      // 107
-            quantity: null,         // 6
-            machine: null,   // COLLET (optional)
-        };
-        return issue;
+        return {
+                    key: params.get('key'),
+                    name: params.get('name') || params.get('key'),                    // Task name
+                    job_no: params.get('name') || params.get('key'),           // RM260-01-12
+                    image_no: null,         // 8.7211.0005
+                    position_no: null,      // 107
+                    quantity: null,         // 6
+                    machine: null,   // COLLET (optional)
+                };
     }
     
 }

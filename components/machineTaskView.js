@@ -9,7 +9,8 @@ export async function createMachineTaskView({
     title = '',
     machineLabel = 'Makine Seçimi',
     searchPlaceholder = 'TI numarası ile ara...',
-    taskDetailBasePath = '' // e.g. '/machining/tasks/' or '/cutting/tasks/'
+    taskDetailBasePath = '', // e.g. '/machining/tasks/' or '/cutting/tasks/'
+    preselectedMachine // new prop
 }) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -61,14 +62,22 @@ export async function createMachineTaskView({
         select.appendChild(option);
     });
     let allTasks = [];
-    async function loadTasks(machineId) {
-        allTasks = await fetchTasks(machineId);
+    let selectedMachine = null;
+    // Preselect machine if provided
+    if (preselectedMachine) {
+        select.value = machines.find(m => String(m.id) === String(preselectedMachine.id))?.jira_id || '';
+        selectedMachine = preselectedMachine;
+        // Load tasks for preselected machine
+        allTasks = await fetchTasks(preselectedMachine.jira_id);
         renderTaskList(allTasks);
     }
     select.onchange = () => {
         const selectedOption = select.options[select.selectedIndex];
-        sessionStorage.setItem('selectedMachineId', selectedOption.dataset.machineId || '');
-        loadTasks(select.value);
+        const selectedMachine = machines.find(m => String(m.id) === String(selectedOption.dataset.machineId));
+        if (selectedMachine) {
+            // Redirect to /machining/?machine_id=<machine_id>
+            window.location.href = `/machining/?machine_id=${encodeURIComponent(selectedMachine.id)}`;
+        }
     };
     // Initial load
     sessionStorage.setItem('selectedMachineId', '');
@@ -148,7 +157,11 @@ export async function createMachineTaskView({
             card.onclick = () => {
                 if (onTaskClick) onTaskClick(task);
                 if (taskDetailBasePath && task.key) {
-                    window.location.href = `${taskDetailBasePath}?key=${task.key}`;
+                    // Get machine_id from URL
+                    const params = new URLSearchParams(window.location.search);
+                    const machineId = params.get('machine_id');
+                    const url = `${taskDetailBasePath}?machine_id=${encodeURIComponent(machineId)}&key=${task.key}`;
+                    window.location.href = url;
                 }
             };
             const fields = task.fields || {};

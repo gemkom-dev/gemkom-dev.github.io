@@ -36,7 +36,7 @@ export function updateTimerDisplay() {
 }
 
 export function setupTaskDisplay(hasActiveTimer) {
-    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, faultBtn, backBtn, timerDisplay } = getUIElements();
+    const { startBtn, stopOnlyBtn, manualBtn, doneBtn, faultBtn, backBtn, timerDisplay, taskTitle } = getUIElements();
     taskTitle.textContent = state.currentIssue.key;
     const timerContainer = document.getElementById('timer-container');
     const titleRow = document.createElement('div');
@@ -57,7 +57,7 @@ export function setupTaskDisplay(hasActiveTimer) {
     titleRow.appendChild(taskTitle);
     titleRow.appendChild(right);
     timerContainer.prepend(titleRow);
-    if (hasActiveTimer) {
+    if (!hasActiveTimer) {
         startBtn.textContent = 'Başlat';
         startBtn.classList.remove('red');
         startBtn.classList.add('green');

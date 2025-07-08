@@ -2,7 +2,7 @@
 // State management and utilities for task functionality
 
 import { state } from '../machiningService.js';
-import { getActiveTimer, getTaskKeyFromURL } from './taskApi.js';
+import { getMachine, getTaskKeyFromURL } from './taskApi.js';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -15,7 +15,7 @@ export function setCurrentIssueState(issue) {
         image_no: issue.image_no,
         position_no: issue.position_no,
         quantity: issue.quantity
-    }
+    };
 }   
 
 export function setCurrentTimerState(hasActiveTimer) {
@@ -32,11 +32,11 @@ export function setCurrentTimerState(hasActiveTimer) {
     }
 }
 
-export function setCurrentMachineState(machine) {
-    state.currentMachine = {
-        id: machine.id,
-        name: machine.name
-    }
+export function setCurrentMachineState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const machineId = urlParams.get('machine_id');
+    const machine = getMachine(machineId);
+    state.currentMachine = machine;
 }
 
 

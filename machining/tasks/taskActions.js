@@ -39,14 +39,13 @@ export function setupStartStopHandler() {
 }
 
 async function handleStartStopClick() {
-    const machine = await getMachine(state.currentMachine.id);
-    if (machine.is_under_maintenance) {
+    if (state.currentMachine.is_under_maintenance) {
         alert('Bu makine bakımda. İşlem yapamazsınız.');
         navigateTo(ROUTES.MACHINING);
         return;
     }
-    setupTaskDisplay(machine.has_active_timer);
-    if (!machine.has_active_timer) {
+    setupTaskDisplay(state.currentMachine.has_active_timer);
+    if (!state.currentMachine.has_active_timer) {
         await handleStartTimer();
     } else {
         await handleStopTimer();
