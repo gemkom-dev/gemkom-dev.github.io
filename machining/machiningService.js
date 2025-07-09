@@ -5,7 +5,7 @@ import {
   jiraBase
 } from '../base.js';
 import { authedFetch } from '../authService.js';
-import { formatTime, formatJiraDate } from '../helpers.js';
+import { formatTime, formatJiraDate } from '../generic/formatters.js';
 
 export const state = {
     intervalId: null,
@@ -80,9 +80,4 @@ export async function logTimeToJiraShared({ startTime, elapsedSeconds, comment, 
         })
     });
     return response.ok;
-}
-
-export const fetchMachinesForMachining = async () => {
-  const res = await authedFetch(`${backendBase}/machines?used_in=machining`);
-  return await res.json();
 }

@@ -10,6 +10,7 @@ import { showMachineList } from './machineList.js';
 import { showJiraSettings } from './jiraSettings.js';
 import { showMesaiTaleplerim } from './mesaiTaleplerim.js';
 import { showBulkUserCreateForm } from './bulkUserCreate.js';
+import { showMachineCreateForm } from './createMachine.js';
 import { isAdmin, isLead } from '../authService.js';
 import { showMachiningDetailedReport } from './machiningDetailedReport.js';
 import { showFinishedTimers } from './finishedTimers.js';
@@ -33,6 +34,8 @@ export function setupAdminSidebar(sidebarRoot) {
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi', 'Çoklu Kullanıcı Ekle'] });
         sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
         sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Grup Rapor', 'Makine Listesi'] });
+        sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Makine Listesi'] });
+        sidebar.addItem('Makineler', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
     } else if (isLead() && user.team === 'machining') {
         sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Biten Zamanlayıcılar', 'Makine Listesi'] });
@@ -73,10 +76,24 @@ export function setupSidebarEventListeners() {
         canliTakipItem.addEventListener('click', handleSidebarClick('Aktif Zamanlayıcılar', showMachiningLiveReport));
     }
 
-    const makineListesiItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Makine Listesi');
-    if (makineListesiItem) {
-        makineListesiItem.addEventListener('click', handleSidebarClick('Makine Listesi', showMachineList));
-    }
+    // Handle all "Makine Listesi" items with different contexts
+    const machineListItems = Array.from(document.querySelectorAll('.sidebar-subitem')).filter(el => el.textContent.trim() === 'Makine Listesi');
+    
+    machineListItems.forEach((item, index) => {
+        // Determine context based on parent sidebar item
+        const parentItem = item.closest('.sidebar-item');
+        if (parentItem) {
+            const parentLabel = parentItem.querySelector('.sidebar-label').textContent.trim();
+            
+            if (parentLabel === 'Talaşlı İmalat') {
+                item.addEventListener('click', handleSidebarClick('Makine Listesi (Talaşlı İmalat)', () => showMachineList('machining')));
+            } else if (parentLabel === 'Kesim') {
+                item.addEventListener('click', handleSidebarClick('Makine Listesi (Kesim)', () => showMachineList('cutting')));
+            } else if (parentLabel === 'Makineler') {
+                item.addEventListener('click', handleSidebarClick('Makine Listesi (Genel)', () => showMachineList()));
+            }
+        }
+    });
 
     const jiraAyarlariItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Jira Ayarları');
     if (jiraAyarlariItem) {
@@ -104,6 +121,11 @@ export function setupSidebarEventListeners() {
     if (islerItem) {
         islerItem.addEventListener('click', handleSidebarClick('İşler', showTaskListSection));
     }
+
+    const makineEkleItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Makine Ekle');
+    if (makineEkleItem) {
+        makineEkleItem.addEventListener('click', handleSidebarClick('Makine Ekle', showMachineCreateForm));
+    }
 }
 
 export function restoreLastView() {
@@ -116,11 +138,14 @@ export function restoreLastView() {
             case 'Mesai Talebi Gönder': showMesaiTalebiForm(); break;
             case 'Mesai Taleplerim': showMesaiTaleplerim(); break;
             case 'Aktif Zamanlayıcılar': showMachiningLiveReport(); break;
-            case 'Makine Listesi': showMachineList(); break;
+            case 'Makine Listesi (Talaşlı İmalat)': showMachineList('machining'); break;
+            case 'Makine Listesi (Kesim)': showMachineList('cutting'); break;
+            case 'Makine Listesi (Genel)': showMachineList(); break;
             case 'Jira Ayarları': showJiraSettings(); break;
             case 'Grup Rapor': showMachiningDetailedReport(); break;
             case 'Biten Zamanlayıcılar': showFinishedTimers(); break;
             case 'İşler': showTaskListSection(); break;
+            case 'Makine Ekle': showMachineCreateForm(); break;
             // Add more as needed
             default: break;
         }

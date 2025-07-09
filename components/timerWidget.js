@@ -1,6 +1,6 @@
 // --- timerWidget.js ---
-import { formatTime } from '../helpers.js';
-import { syncServerTime, getSyncedNow } from '../timeService.js';
+import { formatTime } from '../generic/formatters.js';
+import { syncServerTime, getSyncedNow } from '../generic/timeService.js';
 import { backendBase } from '../base.js';
 import { authedFetch, navigateTo, ROUTES } from '../authService.js';
 
@@ -219,17 +219,25 @@ export class TimerWidget {
             return;
         }
 
-        content.innerHTML = this.activeTimers.map(timer => `
-            <div class="timer-widget-item" data-timer-id="${timer.id}" onclick="window.location.href='/machining/tasks/?key=${timer.issue_key}'">
-                <div class="timer-widget-item-header">
-                    <span class="timer-widget-issue">${timer.issue_key}</span>
-                    <span class="timer-widget-machine">${timer.machine || 'Bilinmeyen'}</span>
+        content.innerHTML = this.activeTimers.map(timer => {
+            // Build URL with hold parameter if issue_is_hold_task is true
+            let url = `/machining/tasks/?machine_id=${timer.machine_fk}&key=${timer.issue_key}`;
+            if (timer.issue_is_hold_task) {
+                url += '&hold=1';
+            }
+            
+            return `
+                <div class="timer-widget-item" data-timer-id="${timer.id}" onclick="window.location.href='${url}'">
+                    <div class="timer-widget-item-header">
+                        <span class="timer-widget-issue">${timer.issue_key}</span>
+                        <span class="timer-widget-machine">${timer.machine_name || 'Bilinmeyen'}</span>
+                    </div>
+                    <div class="timer-widget-time" id="timer-display-${timer.id}">
+                        ${this.formatDuration(timer.start_time)}
+                    </div>
                 </div>
-                <div class="timer-widget-time" id="timer-display-${timer.id}">
-                    ${this.formatDuration(timer.start_time)}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     formatDuration(startTime) {

@@ -4,9 +4,9 @@
 import { state } from '../machiningService.js';
 import { proxyBase, backendBase, jiraBase } from '../../base.js';
 import { authedFetch, navigateTo, ROUTES } from '../../authService.js';
-import { mapJiraIssueToTask } from '../../helpers.js';
-import { getSyncedNow, syncServerTime } from '../../timeService.js';
-import { setCurrentTimerState } from './taskState.js';
+import { mapJiraIssueToTask } from '../../generic/formatters.js';
+import { getSyncedNow, syncServerTime } from '../../generic/timeService.js';
+import { setCurrentTimerState, setCurrentMachineState } from './taskState.js';
 
 // ============================================================================
 // TASK DATA FETCHING
@@ -47,6 +47,7 @@ export async function fetchTaskDetails(taskKey=null) {
                     position_no: null,      // 107
                     quantity: null,         // 6
                     machine: null,   // COLLET (optional)
+                    is_hold_task: true
                 };
     }
     
@@ -69,7 +70,7 @@ export async function getActiveTimer(taskKey) {
 // TIMER OPERATIONS
 // ============================================================================
 
-export async function startTimer() {
+export async function startTimer(comment = null) {
     if (!state.currentMachine.id || !state.currentIssue.key){
         alert("Bir sorun oluştu. Sayfa yeniden yükleniyor.");
         navigateTo(ROUTES.MACHINING);
@@ -86,6 +87,12 @@ export async function startTimer() {
         position_no: state.currentIssue.position_no,
         quantity: state.currentIssue.quantity
     }
+    
+    // Add comment if provided
+    if (comment) {
+        timerData.comment = comment;
+    }
+    
     const response = await authedFetch(`${backendBase}/machining/timers/start/`, {
         method: 'POST',
         body: JSON.stringify(timerData)
@@ -98,28 +105,36 @@ export async function startTimer() {
         const timer = await response.json();
         timerData.id = timer.id;
         setCurrentTimerState(timerData);
+        setCurrentMachineState(state.currentMachine.id);
         return timer;
     }
 }
 
-export async function createManualTimeEntry(startDateTime, endDateTime) {
+export async function createManualTimeEntry(startDateTime, endDateTime, comment = null) {
     if (!state.currentMachine.id){
         navigateTo(ROUTES.MACHINING);
         return;
     }
+    const requestBody = {
+        issue_key: state.currentIssue.key,
+        start_time: startDateTime.getTime(),
+        finish_time: endDateTime.getTime(),
+        machine: state.currentIssue.customfield_11411?.value || '',
+        machine_fk: state.currentMachine.id,
+        job_no: state.currentIssue.customfield_10117 || '',
+        image_no: state.currentIssue.customfield_10184 || '',
+        position_no: state.currentIssue.customfield_10185 || '',
+        quantity: state.currentIssue.customfield_10187 || ''
+    };
+    
+    // Add comment if provided
+    if (comment) {
+        requestBody.comment = comment;
+    }
+    
     const response = await authedFetch(`${backendBase}/machining/manual-time/`, {
         method: 'POST',
-        body: JSON.stringify({
-            issue_key: state.currentIssue.key,
-            start_time: startDateTime.getTime(),
-            finish_time: endDateTime.getTime(),
-            machine: state.currentIssue.customfield_11411?.value || '',
-            machine_fk: state.currentMachine.id,
-            job_no: state.currentIssue.customfield_10117 || '',
-            image_no: state.currentIssue.customfield_10184 || '',
-            position_no: state.currentIssue.customfield_10185 || '',
-            quantity: state.currentIssue.customfield_10187 || ''
-        })
+        body: JSON.stringify(requestBody)
     });
     
     return response.ok;
@@ -154,10 +169,7 @@ export async function markTaskAsDone() {
 }
 
 
-export async function getMachine(machineId) {
-    const response = await authedFetch(`${backendBase}/machines/${machineId}/`);
-    return response.json();
-}
+
 
 // ============================================================================
 // MAINTENANCE CHECKING

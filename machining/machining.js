@@ -1,6 +1,6 @@
 // --- machining.js ---
 import { createMachineTaskView } from '../components/machineTaskView.js';
-import { fetchMachinesForMachining } from './machiningService.js';
+import { fetchMachines } from '../generic/machines.js';
 import { fetchTasksForMachining } from './machiningService.js';
 import { initNavbar } from '../components/navbar.js';
 import { guardRoute } from '../authService.js';
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavbar();
     await createMachineTaskView({
         containerId: 'main-view',
-        fetchMachines: fetchMachinesForMachining,
+        fetchMachines: fetchMachines('machining'),
         fetchTasks: fetchTasksForMachining,
         title: 'Talaşlı İmalat',
         machineLabel: 'Makine Seçimi',

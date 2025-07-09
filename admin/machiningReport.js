@@ -1,6 +1,6 @@
 import { updateActiveTimers, updateMachines } from './adminView.js';
-import { fetchMachinesForMachining } from '../machining/machiningService.js';
-import { getSyncedNow } from '../timeService.js';
+import { fetchMachines } from '../generic/machines.js';
+import { getSyncedNow } from '../generic/timeService.js';
 import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
 import { TimerWidget } from '../components/timerWidget.js';
 import { authedFetch } from '../authService.js';
@@ -8,7 +8,7 @@ import { authedFetch } from '../authService.js';
 export async function showMachiningLiveReport() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
     if (!mainContent) return;
-    const machines = await fetchMachinesForMachining();
+    const machines = await fetchMachines('machining');
     mainContent.innerHTML = `
         <div class="d-flex justify-content-end mb-3">
             <button id="refresh-btn" class="btn btn-primary"> ⟳ Yenile</button>

@@ -113,7 +113,7 @@ export async function createMachineTaskView({
         placeholderCard.className = 'task-card placeholder-task';
         placeholderCard.style.background = '#ffeeba'; // Distinct color
         placeholderCard.style.cursor = 'pointer';
-        placeholderCard.innerHTML = '<h3>Bekletme Nedeniyle İş Başlat</h3><p>Makineyi bekletme (ariza, malzeme bekleme, vs) için tıklayın</p>';
+        placeholderCard.innerHTML = '<h3>Diğer İşler</h3><p>Makineyi bekletme (fabrika işleri, malzeme bekleme, yemek molası, izin, vs) için tıklayın</p>';
         placeholderCard.onclick = async () => {
             // Show modal to select reason_code
             let modal = document.getElementById('hold-task-modal');
@@ -159,8 +159,10 @@ export async function createMachineTaskView({
                 const reasonCode = select.value;
                 const reasonName = select.options[select.selectedIndex]?.text || reasonCode;
                 if (!reasonCode) return;
+                const params = new URLSearchParams(window.location.search);
+                const machineId = params.get('machine_id');
                 // Go to tasks page with reason_code as issue_key and pass name
-                window.location.href = `${taskDetailBasePath}?key=${encodeURIComponent(reasonCode)}&name=${encodeURIComponent(reasonName)}&hold=1`;
+                window.location.href = `${taskDetailBasePath}?machine_id=${encodeURIComponent(machineId)}&key=${encodeURIComponent(reasonCode)}&name=${encodeURIComponent(reasonName)}&hold=1`;
             };
         };
         ul.appendChild(placeholderCard);

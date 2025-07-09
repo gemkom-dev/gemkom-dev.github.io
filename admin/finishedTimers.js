@@ -239,7 +239,7 @@ export function showFinishedTimers() {
                     const machineSelect = document.getElementById('edit-machine');
                     machineSelect.innerHTML = '<option>Yükleniyor...</option>';
                     try {
-                        const machines = await import('../machining/machiningService.js').then(m => m.fetchMachinesForMachining());
+                        const machines = await import('../generic/machines.js').then(m => m.fetchMachines('machining'));
                         machineSelect.innerHTML = machines.map(machine =>
                             `<option value="${machine.id}"${machine.id == timer.machine_fk ? ' selected' : ''}>${machine.name || ''}</option>`
                         ).join('');

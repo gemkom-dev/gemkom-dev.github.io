@@ -1,5 +1,5 @@
 import { backendBase } from '../base.js';
-import { getSyncedNow } from '../timeService.js'
+import { getSyncedNow } from '../generic/timeService.js'
 import { authedFetch } from '../authService.js';
 
 export async function fetchActiveTimers() {
