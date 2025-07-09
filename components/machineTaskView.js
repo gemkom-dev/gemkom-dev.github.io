@@ -9,8 +9,7 @@ export async function createMachineTaskView({
     title = '',
     machineLabel = 'Makine Seçimi',
     searchPlaceholder = 'TI numarası ile ara...',
-    taskDetailBasePath = '', // e.g. '/machining/tasks/' or '/cutting/tasks/'
-    preselectedMachine // new prop
+    taskDetailBasePath = ''
 }) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -62,26 +61,41 @@ export async function createMachineTaskView({
         select.appendChild(option);
     });
     let allTasks = [];
-    let selectedMachine = null;
-    // Preselect machine if provided
-    if (preselectedMachine) {
-        select.value = machines.find(m => String(m.id) === String(preselectedMachine.id))?.jira_id || '';
-        selectedMachine = preselectedMachine;
-        // Load tasks for preselected machine
-        allTasks = await fetchTasks(preselectedMachine.jira_id);
+    
+    async function loadTasks(machineId) {
+        allTasks = await fetchTasks(machineId);
         renderTaskList(allTasks);
     }
+    
     select.onchange = () => {
         const selectedOption = select.options[select.selectedIndex];
         const selectedMachine = machines.find(m => String(m.id) === String(selectedOption.dataset.machineId));
         if (selectedMachine) {
-            // Redirect to /machining/?machine_id=<machine_id>
-            window.location.href = `/machining/?machine_id=${encodeURIComponent(selectedMachine.id)}`;
+            // Update URL without page reload
+            const newUrl = `/machining/?machine_id=${encodeURIComponent(selectedMachine.id)}`;
+            window.history.pushState({ machineId: selectedMachine.id }, '', newUrl);
+            
+            // Load tasks for the selected machine
+            loadTasks(selectedMachine.jira_id);
         }
     };
-    // Initial load
-    sessionStorage.setItem('selectedMachineId', '');
-
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', (event) => {
+        const params = new URLSearchParams(window.location.search);
+        const machineId = params.get('machine_id');
+        if (machineId) {
+            const machine = machines.find(m => String(m.id) === String(machineId));
+            if (machine) {
+                select.value = machine.jira_id;
+                loadTasks(machine.jira_id);
+            }
+        } else {
+            select.value = '';
+            allTasks = [];
+            renderTaskList(allTasks);
+        }
+    });
     // Search
     container.querySelector('#search-input').oninput = (e) => {
         const term = e.target.value.trim().toLowerCase();

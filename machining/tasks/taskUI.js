@@ -5,13 +5,10 @@ import { state} from '../machiningService.js';
 import { getSyncedNow } from '../../timeService.js';
 import { 
     setupStartStopHandler, 
-    setupStopOnlyHandler, 
-    setupManualLogHandler, 
-    setupMarkDoneHandler, 
-    setupFaultReportHandler, 
-    setupBackHandler 
-} from './taskActions.js';
+    setupStopOnlyHandler
+} from './taskHandlers.js';
 import { formatTime } from '../../helpers.js';
+import { setupAllHandlers } from './taskHandlers.js';
 
 // ============================================================================
 // UI MANAGEMENT
@@ -31,32 +28,34 @@ export function getUIElements() {
 }
 
 export function updateTimerDisplay() {
-    const elapsed = Math.round((getSyncedNow() - state.startTime) / 1000);
+    const elapsed = Math.round((getSyncedNow() - state.currentTimer.start_time) / 1000);
     document.getElementById('timer-display').textContent = formatTime(elapsed);
 }
 
 export function setupTaskDisplay(hasActiveTimer) {
     const { startBtn, stopOnlyBtn, manualBtn, doneBtn, faultBtn, backBtn, timerDisplay, taskTitle } = getUIElements();
-    taskTitle.textContent = state.currentIssue.key;
-    const timerContainer = document.getElementById('timer-container');
-    const titleRow = document.createElement('div');
-    titleRow.className = 'title-row';
-    
-    taskTitle.classList.add('task-title');
-    
-    const right = document.createElement('div');
-    right.className = 'task-right';
-    
-    right.innerHTML = `
-        <div class="field-row"><span class="label">İş Emri:</span><span class="value">${state.currentIssue.job_no || '-'}</span></div>
-        <div class="field-row"><span class="label">Resim No:</span><span class="value">${state.currentIssue.image_no || '-'}</span></div>
-        <div class="field-row"><span class="label">Poz No:</span><span class="value">${state.currentIssue.position_no || '-'}</span></div>
-        <div class="field-row"><span class="label">Adet:</span><span class="value">${state.currentIssue.quantity || '-'}</span></div>
-    `
-    
-    titleRow.appendChild(taskTitle);
-    titleRow.appendChild(right);
-    timerContainer.prepend(titleRow);
+    if (!taskTitle.textContent) {
+        const timerContainer = document.getElementById('timer-container');
+        const titleRow = document.createElement('div');
+        taskTitle.textContent = state.currentIssue.key;
+        titleRow.className = 'title-row';
+        
+        taskTitle.classList.add('task-title');
+        
+        const right = document.createElement('div');
+        right.className = 'task-right';
+        
+        right.innerHTML = `
+            <div class="field-row"><span class="label">İş Emri:</span><span class="value">${state.currentIssue.job_no || '-'}</span></div>
+            <div class="field-row"><span class="label">Resim No:</span><span class="value">${state.currentIssue.image_no || '-'}</span></div>
+            <div class="field-row"><span class="label">Poz No:</span><span class="value">${state.currentIssue.position_no || '-'}</span></div>
+            <div class="field-row"><span class="label">Adet:</span><span class="value">${state.currentIssue.quantity || '-'}</span></div>
+        `
+        
+        titleRow.appendChild(taskTitle);
+        titleRow.appendChild(right);
+        timerContainer.prepend(titleRow);
+    }
     if (!hasActiveTimer) {
         startBtn.textContent = 'Başlat';
         startBtn.classList.remove('red');
@@ -69,11 +68,7 @@ export function setupTaskDisplay(hasActiveTimer) {
         startBtn.disabled = false;
         stopOnlyBtn.disabled = false;
         timerDisplay.textContent = '00:00:00';
-        setupStartStopHandler();
-        setupManualLogHandler();
-        setupMarkDoneHandler();
-        setupFaultReportHandler();
-        setupBackHandler();
+        setupAllHandlers();
     } else {
         startBtn.textContent = 'Durdur ve İşle';
         startBtn.classList.remove('green');

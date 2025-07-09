@@ -3,8 +3,10 @@
 
 import { state } from '../machiningService.js';
 import { proxyBase, backendBase, jiraBase } from '../../base.js';
-import { authedFetch, navigateTo } from '../../authService.js';
+import { authedFetch, navigateTo, ROUTES } from '../../authService.js';
 import { mapJiraIssueToTask } from '../../helpers.js';
+import { getSyncedNow, syncServerTime } from '../../timeService.js';
+import { setCurrentTimerState } from './taskState.js';
 
 // ============================================================================
 // TASK DATA FETCHING
@@ -68,10 +70,12 @@ export async function getActiveTimer(taskKey) {
 // ============================================================================
 
 export async function startTimer() {
-    if (!sessionStorage.getItem('selectedMachineId')){
+    if (!state.currentMachine.id || !state.currentIssue.key){
+        alert("Bir sorun oluştu. Sayfa yeniden yükleniyor.");
         navigateTo(ROUTES.MACHINING);
         return;
     }
+    await syncServerTime();
     const timerData = {
         issue_key: state.currentIssue.key,
         start_time: getSyncedNow(),
@@ -86,12 +90,20 @@ export async function startTimer() {
         method: 'POST',
         body: JSON.stringify(timerData)
     });
-    
-    return response.json();
+    if (!response.ok) {
+        alert("Bir sorun oluştu. Sayfa yeniden yükleniyor.");
+        navigateTo(ROUTES.MACHINING);
+        return;
+    } else {
+        const timer = await response.json();
+        timerData.id = timer.id;
+        setCurrentTimerState(timerData);
+        return timer;
+    }
 }
 
 export async function createManualTimeEntry(startDateTime, endDateTime) {
-    if (!sessionStorage.getItem('selectedMachineId')){
+    if (!state.currentMachine.id){
         navigateTo(ROUTES.MACHINING);
         return;
     }
@@ -102,7 +114,7 @@ export async function createManualTimeEntry(startDateTime, endDateTime) {
             start_time: startDateTime.getTime(),
             finish_time: endDateTime.getTime(),
             machine: state.currentIssue.customfield_11411?.value || '',
-            machine_fk: sessionStorage.getItem('selectedMachineId'),
+            machine_fk: state.currentMachine.id,
             job_no: state.currentIssue.customfield_10117 || '',
             image_no: state.currentIssue.customfield_10184 || '',
             position_no: state.currentIssue.customfield_10185 || '',

@@ -149,7 +149,7 @@ export function showManualTimeModal({ createManualTimeEntry, logTimeToJiraShared
     });
 }
 
-export function createFaultReportModal() {
+export function createFaultReportModal(machineId) {
     let modal = document.getElementById('fault-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -213,7 +213,6 @@ export function createFaultReportModal() {
             try {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Gönderiliyor...';
-                const machineId = sessionStorage.getItem('selectedMachineId') || -1;
                 if (!machineId || machineId === -1) {
                     alert("Lütfen önce bir makine seçin.");
                     return;

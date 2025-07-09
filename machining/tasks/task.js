@@ -17,8 +17,6 @@ import {
     setupTaskDisplay
 } from './taskUI.js';
 import { setupAllHandlers } from './taskHandlers.js';
-import { handleSoftReload } from './taskLogic.js';
-import { state } from '../machiningService.js';
 
 // ============================================================================
 // INITIALIZATION
@@ -30,7 +28,6 @@ async function initializeTaskView() {
     }
     
     initNavbar();
-    window.addEventListener('softReload', handleSoftReload);
     
     const taskKey = getTaskKeyFromURL();
     if (!taskKey) {
@@ -38,14 +35,12 @@ async function initializeTaskView() {
         return;
     }
     let issue = await fetchTaskDetails(taskKey);
-    const hasActiveTimer = await getActiveTimer(taskKey);
+    const activeTimer = await getActiveTimer(taskKey);
     setCurrentIssueState(issue);
-    setCurrentTimerState(hasActiveTimer);
-    setCurrentMachineState();
-
-    setupTaskDisplay(hasActiveTimer);
-    setupAllHandlers(hasActiveTimer);
-    console.log(state);
+    setCurrentTimerState(activeTimer);
+    await setCurrentMachineState();
+    setupTaskDisplay(activeTimer);
+    setupAllHandlers();
 }
 
 // Initialize when DOM is loaded

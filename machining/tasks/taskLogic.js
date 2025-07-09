@@ -1,9 +1,11 @@
 // --- taskLogic.js ---
 // Core business logic for task functionality
 
-import { state } from '../machiningService.js';
-import { updateTimerDisplay} from './taskUI.js';
-import { performSoftReload } from './taskState.js';
+import { state, stopTimerShared, logTimeToJiraShared } from '../machiningService.js';
+import { updateTimerDisplay, setupTaskDisplay} from './taskUI.js';
+import { TimerWidget } from '../../components/timerWidget.js';
+import { startTimer } from './taskApi.js';
+import { getSyncedNow } from '../../timeService.js';
 
 // ============================================================================
 // TIMER SETUP
@@ -19,24 +21,52 @@ export function setupTimerHandlers(restoring = false) {
     }
 }
 
-// ============================================================================
-// SOFT RELOAD HANDLING
-// ============================================================================
-
-export async function handleSoftReload() {
+export async function handleStartTimer() {
     try {
-        const timerRestored = await performSoftReload(false);
+        state.intervalId = setInterval(updateTimerDisplay, 1000);
+        await startTimer();
+        setupTaskDisplay(true);
+        TimerWidget.triggerUpdate();
         
-        if (timerRestored) {
-            // Timer was restored, set up active state
-            setupTimerHandlers(true);
+    } catch (error) {
+        console.error('Error starting timer:', error);
+        alert("Zamanlayıcı başlatılırken hata oluştu.");
+    }
+}
+
+export async function handleStopTimer(save_to_jira=true) {
+    const startBtn = document.getElementById('start-stop');
+    
+    // Stop timer and log to Jira
+    clearInterval(state.intervalId);
+    let elapsed = Math.round((getSyncedNow() - state.startTime) / 1000);
+    if (elapsed < 60) elapsed = 60;
+    
+    startBtn.disabled = true;
+    startBtn.textContent = 'İşleniyor...';
+    
+    try {
+        const stopSuccess = await stopTimerShared({ 
+            timerId: state.currentTimer.id, 
+            finishTime: getSyncedNow(),
+            syncToJira: save_to_jira
+        });
+        
+        if (stopSuccess) {
+            if (save_to_jira) {
+                await logTimeToJiraShared({ 
+                    issueKey: state.currentIssue.key,
+                    startTime: state.currentTimer.start_time, 
+                    elapsedSeconds: elapsed 
+                });
+            }
+            setupTaskDisplay(false);
+            TimerWidget.triggerUpdate();
         } else {
-            // No timer was restored, set up inactive state
-            setupTimerHandlers(false);
+            alert("Hata oluştu. Lütfen tekrar deneyin.");
         }
     } catch (error) {
-        console.error('Error during soft reload:', error);
-        // Fallback to full page reload if soft reload fails
-        window.location.reload();
+        console.error('Error stopping timer:', error);
+        alert("Hata oluştu. Lütfen tekrar deneyin.");
     }
-} 
+}
