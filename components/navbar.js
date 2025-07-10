@@ -1,7 +1,6 @@
 import { logout, isAdmin, isLoggedIn, getUser, navigateTo, ROUTES } from '../authService.js';
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
-import { isLead } from '../authService.js';
 
 // Navbar component
 export function createNavbar() {
@@ -27,9 +26,6 @@ export function createNavbar() {
                     </li>
                     <li class="nav-item machining-only" style="display: none;">
                         <a class="nav-link" href="/machining">Talaşlı İmalat</a>
-                    </li>
-                    <li class="nav-item cutting-only" style="display: none;">
-                        <a class="nav-link" href="/cutting">Kesim</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
@@ -68,7 +64,7 @@ export function createNavbar() {
 
     // Show admin tab if user is admin (sync)
     const adminTab = navbar.querySelector('.admin-only');
-    if (isAdmin() || isLead()) {
+    if (isAdmin()) {
         adminTab.style.display = 'block';
     } else {
         adminTab.style.display = 'none';
@@ -205,9 +201,6 @@ export function initNavbar() {
                         <li class="nav-item">
                             <a class="nav-link" href="/maintenance">Bakım</a>
                         </li>
-                        <li class="nav-item cutting-only" style="display: none;">
-                            <a class="nav-link" href="/cutting">Kesim</a>
-                        </li>
                         <li class="nav-item admin-only" style="display: none;">
                             <a class="nav-link" href="/admin">Admin</a>
                         </li>
@@ -246,7 +239,7 @@ export function initNavbar() {
       });
       // Show admin tab if user is admin (sync)
       const adminTab = navbarContainer.querySelector('.admin-only');
-      if (isAdmin() || isLead()) {
+      if (isAdmin()) {
           adminTab.style.display = 'block';
       } else {
           adminTab.style.display = 'none';
@@ -261,12 +254,12 @@ export function initNavbar() {
       }
       
       // Show cutting tab if user is cutting team or admin
-      const cuttingTab = navbarContainer.querySelector('.cutting-only');
-      if (isAdmin() || user.team === 'cutting') {
-          cuttingTab.style.display = 'block';
-      } else {
-          cuttingTab.style.display = 'none';
-      }
+    //   const cuttingTab = navbarContainer.querySelector('.cutting-only');
+    //   if (isAdmin() || user.team === 'cutting') {
+    //       cuttingTab.style.display = 'block';
+    //   } else {
+    //       cuttingTab.style.display = 'none';
+    //   }
     }
     renderNavbar();
 }

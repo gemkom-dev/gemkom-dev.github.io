@@ -3,6 +3,7 @@ import { formatTime } from '../generic/formatters.js';
 import { syncServerTime, getSyncedNow } from '../generic/timeService.js';
 import { backendBase } from '../base.js';
 import { authedFetch, navigateTo, ROUTES } from '../authService.js';
+import { extractResultsFromResponse } from '../generic/paginationHelper.js';
 
 /* <button class="timer-widget-stop" onclick="window.timerWidget.stopTimer(${timer.id})">
     Durdur
@@ -199,7 +200,8 @@ export class TimerWidget {
             const startAfter = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(); // 24 hours ago in ISO format
             const response = await authedFetch(`${backendBase}/machining/timers/?is_active=true`);
             if (response.ok) {
-                this.activeTimers = await response.json();
+                const responseData = await response.json();
+                this.activeTimers = extractResultsFromResponse(responseData);
                 return true;
             }
         } catch (error) {
@@ -359,7 +361,8 @@ export class TimerWidget {
                 const startAfterTs = Math.floor((now - 24 * 60 * 60 * 1000) / 1000); // 24 hours ago, in seconds
                 const response = await authedFetch(`${backendBase}/machining/timers/?start_after=${startAfterTs}`);
                 if (response.ok) {
-                    const latestTimers = await response.json();
+                    const responseData = await response.json();
+                    const latestTimers = extractResultsFromResponse(responseData);
                     // Get current user information
                     const currentUser = JSON.parse(localStorage.getItem('user'));
                     

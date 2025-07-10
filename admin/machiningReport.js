@@ -4,6 +4,7 @@ import { getSyncedNow } from '../generic/timeService.js';
 import { stopTimerShared, logTimeToJiraShared } from '../machining/machiningService.js';
 import { TimerWidget } from '../components/timerWidget.js';
 import { authedFetch } from '../authService.js';
+import { extractResultsFromResponse } from '../generic/paginationHelper.js';
 
 export async function showMachiningLiveReport() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
@@ -91,10 +92,13 @@ function setupMachiningTableEventListeners() {
 
 async function fetchActiveTimerById(timerId) {
     // Fetch all active timers and find the one with the given ID
-    const res = await authedFetch(`/machining/timers?is_active=true`);
+    const res = await authedFetch(`/machining/timers/${timerId}/`);
     if (!res.ok) return null;
-    const timers = await res.json();
-    return timers.find(t => t.id == timerId);
+    const timer = await res.json();
+    if (timer.finish_time === null) {
+        return timer;
+    }
+    return null;
 }
 
 async function handleSaveToJira(timerId) {

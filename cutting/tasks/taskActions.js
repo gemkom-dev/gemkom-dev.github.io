@@ -21,7 +21,6 @@ export async function handleStartStopClick() {
         navigateTo(ROUTES.CUTTING);
         return;
     }
-    console.log(state.currentMachine);
     if (!state.currentTimer || !state.currentTimer.start_time) {
         // For hold tasks, show comment modal first
         if (state.currentIssue.is_hold_task && state.currentIssue.key !== 'W-14' && state.currentIssue.key !== 'W-02') {

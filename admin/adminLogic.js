@@ -11,7 +11,7 @@ import { showJiraSettings } from './jiraSettings.js';
 import { showMesaiTaleplerim } from './mesaiTaleplerim.js';
 import { showBulkUserCreateForm } from './bulkUserCreate.js';
 import { showMachineCreateForm } from './createMachine.js';
-import { isAdmin, isLead } from '../authService.js';
+import { isAdmin } from '../authService.js';
 import { showMachiningDetailedReport } from './machiningDetailedReport.js';
 import { showFinishedTimers } from './finishedTimers.js';
 import { showTaskListSection } from './taskList.js';
@@ -37,10 +37,6 @@ export function setupAdminSidebar(sidebarRoot) {
         sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Makine Listesi'] });
         sidebar.addItem('Makineler', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
-    } else if (isLead() && user.team === 'machining') {
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Biten Zamanlayıcılar', 'Makine Listesi'] });
-    } else if (!isLead() && user.team === 'machining'){
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Biten Zamanlayıcılar'] });
     }
     
     //sidebar.addItem('Kaynaklı İmalat', { subItems: ['Makine Ekle', 'Makine Listesi'] });

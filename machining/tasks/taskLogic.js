@@ -40,7 +40,7 @@ export async function handleStopTimer(save_to_jira=true) {
     
     // Stop timer and log to Jira
     clearInterval(state.intervalId);
-    let elapsed = Math.round((getSyncedNow() - state.startTime) / 1000);
+    let elapsed = Math.round((getSyncedNow() - state.currentTimer.start_time) / 1000);
     if (elapsed < 60) elapsed = 60;
     
     startBtn.disabled = true;

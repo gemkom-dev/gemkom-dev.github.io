@@ -8,6 +8,7 @@ import { authedFetch, navigateTo, ROUTES } from '../authService.js';
 import { formatTime, formatJiraDate } from '../generic/formatters.js';
 import { getSyncedNow, syncServerTime } from '../generic/timeService.js';
 import { setCurrentTimerState, setCurrentMachineState } from './tasks/taskState.js';
+import { extractFirstResultFromResponse } from '../generic/paginationHelper.js';
 
 export const state = {
     intervalId: null,
@@ -95,8 +96,8 @@ export async function getActiveTimer(taskKey) {
         return null;
     }
     
-    const timerList = await response.json();
-    const activeTimer = timerList[0];
+    const responseData = await response.json();
+    const activeTimer = extractFirstResultFromResponse(responseData);
     
     return activeTimer && activeTimer.finish_time === null ? activeTimer : null;
 }

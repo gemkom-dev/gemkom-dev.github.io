@@ -7,6 +7,7 @@ import { authedFetch, navigateTo, ROUTES } from '../../authService.js';
 import { mapJiraIssueToTask } from '../../generic/formatters.js';
 import { getSyncedNow, syncServerTime } from '../../generic/timeService.js';
 import { setCurrentTimerState, setCurrentMachineState } from './taskState.js';
+import { extractFirstResultFromResponse } from '../../generic/paginationHelper.js';
 
 // ============================================================================
 // TASK DATA FETCHING
@@ -60,8 +61,8 @@ export async function getActiveTimer(taskKey) {
         return null;
     }
     
-    const timerList = await response.json();
-    const activeTimer = timerList[0];
+    const responseData = await response.json();
+    const activeTimer = extractFirstResultFromResponse(responseData);
     
     return activeTimer && activeTimer.finish_time === null ? activeTimer : null;
 }
