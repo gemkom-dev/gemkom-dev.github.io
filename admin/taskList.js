@@ -1,4 +1,4 @@
-import { backendBase } from '../base.js';
+import { backendBase, jiraBase, proxyBase } from '../base.js';
 import { authedFetch } from '../authService.js';
 
 const columns = [
@@ -8,7 +8,11 @@ const columns = [
     { key: 'image_no', label: 'Resim No' },
     { key: 'position_no', label: 'Pozisyon No' },
     { key: 'quantity', label: 'Adet' },
-    { key: 'completion_date', label: 'Bitiş Tarihi' },
+    { key: 'estimated_hours', label: 'Tahmini Saat' },
+    { key: 'machine_fk', label: 'Makine' },
+    { key: 'finish_time', label: 'Bitiş Tarihi' },
+    { key: 'total_hours_spent', label: 'Toplam Harcanan Saat' },
+    { key: 'completion_date', label: 'Tamamlanma Tarihi' },
     { key: 'completed_by_username', label: 'Tamamlayan' },
     { key: 'status', label: 'Durum' },
     { key: 'actions', label: '' },
@@ -58,6 +62,17 @@ export async function showTaskListSection() {
         <div class="row mb-3">
             <div class="col-12">
                 <h3>Talaşlı İmalat İşler</h3>
+                
+                <!-- TEMPORARY SYNC BUTTON - REMOVE LATER -->
+                <div class="alert alert-warning mb-3">
+                    <strong>Temporary Feature:</strong> 
+                    <button type="button" id="sync-jira-btn" class="btn btn-warning btn-sm ms-2">
+                        <i class="bi bi-arrow-repeat"></i> Sync Database with Jira
+                    </button>
+                    <small class="d-block mt-1">This button and its logic should be removed after use.</small>
+                </div>
+                <!-- END TEMPORARY SECTION -->
+                
                 <form id="task-list-filters" class="row g-3 align-items-end">
                     <div class="col-md-2">
                         <label for="key" class="form-label">TI Numarası</label>
@@ -115,6 +130,12 @@ export async function showTaskListSection() {
     document.getElementById('fetch-task-list-btn').addEventListener('click', async () => {
         await renderTaskListTable();
     });
+    
+    // TEMPORARY: Add event listener for sync button
+    document.getElementById('sync-jira-btn').addEventListener('click', async () => {
+        await handleJiraSync();
+    });
+    
     // Initial fetch
     document.getElementById('fetch-task-list-btn').click();
 
@@ -162,6 +183,14 @@ async function renderTaskListTable() {
                     val = row.key ? `<a href="https://gemkom-1.atlassian.net/browse/${row.key}" target="_blank">${row.key}</a>` : '';
                 } else if (col.key === 'completion_date') {
                     val = row.completion_date ? new Date(row.completion_date).toLocaleString('tr-TR') : '';
+                } else if (col.key === 'finish_time') {
+                    val = row.finish_time ? new Date(row.finish_time).toLocaleDateString('tr-TR') : '';
+                } else if (col.key === 'estimated_hours') {
+                    val = row.estimated_hours ? `${row.estimated_hours} saat` : '';
+                } else if (col.key === 'total_hours_spent') {
+                    val = row.total_hours_spent ? `${row.total_hours_spent} saat` : '';
+                } else if (col.key === 'machine_fk') {
+                    val = row.machine_fk ? row.machine_fk : '';
                 } else if (col.key === 'actions') {
                     if (!row.completion_date) {
                         val = `<button class="btn btn-sm btn-success mark-done-btn" data-key="${row.key}">Tamamlandı Olarak İşaretle</button>`;
@@ -235,4 +264,135 @@ async function renderTaskListTable() {
     } catch (err) {
         container.innerHTML = `<div class="text-danger">Hata: ${err.message}</div>`;
     }
-} 
+}
+
+// ============================================================================
+// TEMPORARY JIRA SYNC FUNCTION - REMOVE LATER
+// ============================================================================
+
+async function handleJiraSync() {
+    const syncBtn = document.getElementById('sync-jira-btn');
+    const originalText = syncBtn.innerHTML;
+    
+    try {
+        syncBtn.disabled = true;
+        syncBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Syncing...';
+        
+        // First, fetch machines to map names to IDs
+        const machinesResponse = await authedFetch(`${backendBase}/machines/`);
+        if (!machinesResponse.ok) {
+            throw new Error('Failed to fetch machines list');
+        }
+        const machines = await machinesResponse.json();
+        
+        // Create a mapping of machine names to IDs
+        const machineNameToId = {};
+        machines.forEach(machine => {
+            machineNameToId[machine.name] = machine.id;
+        });
+        
+        console.log('Machine mapping:', machineNameToId);
+        
+        const jql = `project=TI AND status="To Do"`;
+        const encodedJql = encodeURIComponent(jql);
+        
+        const url = `${jiraBase}/rest/api/3/search?jql=${encodedJql}&maxResults=1000&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411,duedate,timeoriginalestimate`;
+        const res = await authedFetch(proxyBase + encodeURIComponent(url), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        console.log('Jira issues fetched:', data.issues.length);
+        
+        // Map Jira issues to database format
+        const mappedTasks = data.issues.map(issue => {
+            const fields = issue.fields;
+            
+            // Convert timeoriginalestimate from seconds to hours
+            let estimatedHours = null;
+            if (fields.timeoriginalestimate) {
+                estimatedHours = Math.round((fields.timeoriginalestimate / 3600) * 100) / 100; // Convert seconds to hours, round to 2 decimal places
+            }
+            
+            // Convert duedate to timestamp if it exists
+            let finishTime = null;
+            if (fields.duedate) {
+                finishTime = new Date(fields.duedate).toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
+            }
+            
+            // Map machine name to machine ID
+            let machineId = null;
+            if (fields.customfield_11411 && fields.customfield_11411.value) {
+                machineId = machineNameToId[fields.customfield_11411.value] || null;
+                if (!machineId) {
+                    console.warn(`Machine not found in database: ${fields.customfield_11411.value}`);
+                }
+            }
+            
+            return {
+                key: issue.key,
+                name: fields.summary || '',
+                job_no: fields.customfield_10117 || null,
+                image_no: fields.customfield_10184 || null,
+                position_no: fields.customfield_10185 || null,
+                quantity: fields.customfield_10187 ? parseInt(fields.customfield_10187) : null,
+                estimated_hours: estimatedHours,
+                finish_time: finishTime,
+                machine_fk: machineId,
+                is_hold_task: false // Default to false, you might want to add logic to detect hold tasks
+            };
+        });
+        
+        console.log('Mapped tasks:', mappedTasks);
+        
+        // Send individual PATCH requests for each task
+        let updatedCount = 0;
+        let errorCount = 0;
+        const errors = [];
+        
+        for (const task of mappedTasks) {
+            try {
+                const patchResponse = await authedFetch(`${backendBase}/machining/tasks/${task.key}/`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(task)
+                });
+                
+                if (patchResponse.ok) {
+                    updatedCount++;
+                } else {
+                    const errorData = await patchResponse.json();
+                    errors.push(`${task.key}: ${errorData.message || 'Update failed'}`);
+                    errorCount++;
+                }
+            } catch (error) {
+                errors.push(`${task.key}: ${error.message}`);
+                errorCount++;
+            }
+        }
+        
+        // Show results
+        let message = `Sync completed!\n\nProcessed: ${mappedTasks.length} issues\nUpdated: ${updatedCount} tasks\nErrors: ${errorCount} tasks`;
+        
+        if (errors.length > 0) {
+            message += `\n\nError details:\n${errors.slice(0, 5).join('\n')}`;
+            if (errors.length > 5) {
+                message += `\n... and ${errors.length - 5} more errors`;
+            }
+        }
+        
+        alert(message);
+        
+    } catch (error) {
+        console.error('Jira sync error:', error);
+        alert(`Sync failed: ${error.message}`);
+    } finally {
+        syncBtn.disabled = false;
+        syncBtn.innerHTML = originalText;
+    }
+}
+
+// ============================================================================
+// END TEMPORARY SECTION
+// ============================================================================ 
