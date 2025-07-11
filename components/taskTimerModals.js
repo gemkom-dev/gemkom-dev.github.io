@@ -250,18 +250,18 @@ export function createFaultReportModal(machineId) {
     const submitBtn = modal.querySelector('#fault-modal-submit');
     const cancelBtn = modal.querySelector('#fault-modal-cancel');
     const closeBtn = modal.querySelector('#fault-modal-close');
-    const isBreakingCheckbox = modal.querySelector('#is-operable');
+    const isOperableCheckbox = modal.querySelector('#is-operable');
     modal.style.display = 'flex';
     descriptionTextarea.focus();
     return new Promise((resolve) => {
         function closeModal() {
             modal.style.display = 'none';
             descriptionTextarea.value = '';
-            isBreakingCheckbox.checked = true;
+            isOperableCheckbox.checked = true;
             resolve();
         }
         submitBtn.onclick = async () => {
-            if (!isBreakingCheckbox.checked) {
+            if (!isOperableCheckbox.checked) {
                 if (!confirm("Arıza kaydı oluşturmak istediğinize emin misiniz? Makine kullanıma kapatılacaktır.")) {
                     closeModal();
                     return;
@@ -287,7 +287,7 @@ export function createFaultReportModal(machineId) {
                     machine: machineId,
                     is_maintenance: false,
                     description: description,
-                    is_breaking: !isBreakingCheckbox.checked
+                    is_breaking: !isOperableCheckbox.checked
                 });
                 
                 if (success) {

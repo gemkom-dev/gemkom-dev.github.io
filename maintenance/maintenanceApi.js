@@ -18,4 +18,24 @@ export async function createMaintenanceRequest(requestData) {
     }
     
     return response.json();
-} 
+}
+
+export async function resolveMaintenanceRequest(requestId, resolutionDescription) {
+    const now = new Date().toISOString();
+    
+    const response = await authedFetch(`${backendBase}/machines/faults/${requestId}/`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            resolution_description: resolutionDescription
+        })
+    });
+    
+    if (!response.ok) {
+        throw new Error('Failed to resolve maintenance request');
+    }
+    
+    return response.json();
+}
