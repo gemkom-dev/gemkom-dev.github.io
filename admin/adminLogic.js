@@ -15,6 +15,7 @@ import { isAdmin } from '../authService.js';
 import { showMachiningDetailedReport } from './machiningDetailedReport.js';
 import { showFinishedTimers } from './finishedTimers.js';
 import { showTaskListSection } from './taskList.js';
+import { showBulkTaskCreate } from './bulkTaskCreate.js';
 
 export function handleSidebarClick(label, callback) {
     return (e) => {
@@ -33,7 +34,7 @@ export function setupAdminSidebar(sidebarRoot) {
         sidebar.addItem('Özet');
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi', 'Çoklu Kullanıcı Ekle'] });
         sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar', 'Grup Rapor'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Çoklu Görev Oluştur', 'Biten Zamanlayıcılar', 'Grup Rapor'] });
         sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar'] });
         sidebar.addItem('Makineler', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
@@ -108,6 +109,12 @@ export function setupSidebarEventListeners() {
     const makineEkleItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Makine Ekle');
     if (makineEkleItem) {
         makineEkleItem.addEventListener('click', handleSidebarClick('Makine Ekle', showMachineCreateForm));
+    }
+
+    // Add event listener for bulk task creation
+    const cokluGorevOlusturItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Çoklu Görev Oluştur');
+    if (cokluGorevOlusturItem) {
+        cokluGorevOlusturItem.addEventListener('click', handleSidebarClick('Çoklu Görev Oluştur', showBulkTaskCreate));
     }
 }
 

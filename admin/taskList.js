@@ -11,14 +11,20 @@ const columns = [
     { key: 'estimated_hours', label: 'Tahmini Saat' },
     { key: 'machine_fk', label: 'Makine' },
     { key: 'finish_time', label: 'Bitiş Tarihi' },
-    { key: 'total_hours_spent', label: 'Toplam Harcanan Saat' },
+    { key: 'total_hours_spent', label: 'Harcanan Saat' },
     { key: 'completion_date', label: 'Tamamlanma Tarihi' },
     { key: 'completed_by_username', label: 'Tamamlayan' },
     { key: 'status', label: 'Durum' },
     { key: 'actions', label: '' },
 ];
 
-function buildTaskListQuery() {
+// Track current page at module level
+let currentPage = 1;
+let lastQueryParams = '';
+// Track ordering
+let currentOrdering = { field: null, direction: 'asc' };
+
+function buildTaskListQuery(page = 1) {
     let key = document.getElementById('key').value.trim();
     const name = document.getElementById('name').value.trim();
     const job_no = document.getElementById('job_no').value.trim();
@@ -51,6 +57,14 @@ function buildTaskListQuery() {
     }
     if (status === 'active') params.push('completion_date__isnull=true');
     if (status === 'completed') params.push('completion_date__isnull=false');
+    params.push(`page=${page}`);
+    params.push(`page_size=50`);
+    // Add ordering param if set
+    if (currentOrdering.field) {
+        const prefix = currentOrdering.direction === 'desc' ? '-' : '';
+        params.push(`ordering=${prefix}${currentOrdering.field}`);
+    }
+    lastQueryParams = params.join('&');
     return params.length ? '?' + params.join('&') : '';
 }
 
@@ -62,17 +76,6 @@ export async function showTaskListSection() {
         <div class="row mb-3">
             <div class="col-12">
                 <h3>Talaşlı İmalat İşler</h3>
-                
-                <!-- TEMPORARY SYNC BUTTON - REMOVE LATER -->
-                <div class="alert alert-warning mb-3">
-                    <strong>Temporary Feature:</strong> 
-                    <button type="button" id="sync-jira-btn" class="btn btn-warning btn-sm ms-2">
-                        <i class="bi bi-arrow-repeat"></i> Sync Database with Jira
-                    </button>
-                    <small class="d-block mt-1">This button and its logic should be removed after use.</small>
-                </div>
-                <!-- END TEMPORARY SECTION -->
-                
                 <form id="task-list-filters" class="row g-3 align-items-end">
                     <div class="col-md-2">
                         <label for="key" class="form-label">TI Numarası</label>
@@ -128,13 +131,10 @@ export async function showTaskListSection() {
     `;
 
     document.getElementById('fetch-task-list-btn').addEventListener('click', async () => {
-        await renderTaskListTable();
+        currentPage = 1; // Reset to first page on new filter
+        await renderTaskListTable(1);
     });
     
-    // TEMPORARY: Add event listener for sync button
-    document.getElementById('sync-jira-btn').addEventListener('click', async () => {
-        await handleJiraSync();
-    });
     
     // Initial fetch
     document.getElementById('fetch-task-list-btn').click();
@@ -150,11 +150,11 @@ export async function showTaskListSection() {
     });
 }
 
-async function renderTaskListTable() {
+async function renderTaskListTable(page = currentPage) {
     const container = document.getElementById('task-list-table-container');
     container.innerHTML = '<div>Yükleniyor...</div>';
     try {
-        const query = buildTaskListQuery();
+        const query = buildTaskListQuery(page);
         const url = `${backendBase}/machining/tasks/${query}`;
         const resp = await authedFetch(url);
         if (!resp.ok) throw new Error('Liste alınamadı');
@@ -164,9 +164,21 @@ async function renderTaskListTable() {
             container.innerHTML = '<div>Sonuç bulunamadı.</div>';
             return;
         }
-        let html = `<div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr>`;
+        // Pagination controls (top)
+        let html = `<div class="table-responsive">`;
+        html += renderPagination(result, page);
+        html += `<table class="table table-bordered table-sm"><thead><tr>`;
         for (const col of columns) {
-            html += `<th>${col.label}</th>`;
+            // Only allow ordering for data columns, not 'actions'
+            if (col.key !== 'actions') {
+                let arrow = '';
+                if (currentOrdering.field === col.key) {
+                    arrow = currentOrdering.direction === 'asc' ? ' ▲' : ' ▼';
+                }
+                html += `<th class="sortable-col" data-key="${col.key}" style="cursor:pointer;">${col.label}${arrow}</th>`;
+            } else {
+                html += `<th>${col.label}</th>`;
+            }
         }
         html += '</tr></thead><tbody>';
         for (const row of data) {
@@ -186,17 +198,20 @@ async function renderTaskListTable() {
                 } else if (col.key === 'finish_time') {
                     val = row.finish_time ? new Date(row.finish_time).toLocaleDateString('tr-TR') : '';
                 } else if (col.key === 'estimated_hours') {
-                    val = row.estimated_hours ? `${row.estimated_hours} saat` : '';
+                    val = row.estimated_hours ? `${row.estimated_hours}` : '';
                 } else if (col.key === 'total_hours_spent') {
-                    val = row.total_hours_spent ? `${row.total_hours_spent} saat` : '';
+                    val = row.total_hours_spent ? `${row.total_hours_spent}` : '';
                 } else if (col.key === 'machine_fk') {
                     val = row.machine_fk ? row.machine_fk : '';
                 } else if (col.key === 'actions') {
+                    val = '';
                     if (!row.completion_date) {
-                        val = `<button class="btn btn-sm btn-success mark-done-btn" data-key="${row.key}">Tamamlandı Olarak İşaretle</button>`;
+                        val += `<button class="btn btn-sm btn-success mark-done-btn" data-key="${row.key}">Bitir</button> `;
                     } else {
-                        val = `<button class="btn btn-sm btn-warning unmark-done-btn" data-key="${row.key}">Tamamlanmadı Olarak İşaretle</button>`;
+                        val += `<button class="btn btn-sm btn-warning unmark-done-btn" data-key="${row.key}">Tekrar Aç</button> `;
                     }
+                    val += `<button class="btn btn-sm btn-primary edit-task-btn" data-key="${row.key}">Düzenle</button> `;
+                    val += `<button class="btn btn-sm btn-danger delete-task-btn" data-key="${row.key}">Sil</button>`;
                 } else if (col.key === 'completed_by_username'){
                     val = row['completed_by_username'] ? row['completed_by_username'] : '';
                 }
@@ -207,8 +222,84 @@ async function renderTaskListTable() {
             }
             html += '</tr>';
         }
-        html += `</tbody></table></div>`;
+        html += `</tbody></table>`;
+        // Pagination controls (bottom)
+        html += renderPagination(result, page);
+        html += `</div>`;
+        // Add edit modal (hidden by default)
+        if (!document.getElementById('edit-task-modal')) {
+            const modalHtml = `
+            <div class="modal" tabindex="-1" id="edit-task-modal" style="display:none; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:1050; align-items:center; justify-content:center;">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Görevi Düzenle</h5>
+                            <button type="button" class="btn-close" id="close-edit-modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="edit-task-form">
+                                <div class="mb-2">
+                                    <label class="form-label">Ad</label>
+                                    <input type="text" class="form-control" id="edit-name" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">İş No</label>
+                                    <input type="text" class="form-control" id="edit-job_no">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Resim No</label>
+                                    <input type="text" class="form-control" id="edit-image_no">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Pozisyon No</label>
+                                    <input type="text" class="form-control" id="edit-position_no">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Adet</label>
+                                    <input type="number" class="form-control" id="edit-quantity">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Tahmini Saat</label>
+                                    <input type="number" step="0.01" class="form-control" id="edit-estimated_hours">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Makine</label>
+                                    <input type="text" class="form-control" id="edit-machine_fk">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Bitiş Tarihi</label>
+                                    <input type="date" class="form-control" id="edit-finish_time">
+                                </div>
+                                <input type="hidden" id="edit-key">
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" id="cancel-edit-modal">İptal</button>
+                            <button type="submit" class="btn btn-primary" id="save-edit-modal">Kaydet</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
         container.innerHTML = html;
+
+        // Add event listeners for sortable columns
+        container.querySelectorAll('.sortable-col').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-key');
+                if (!key) return;
+                if (currentOrdering.field === key) {
+                    // Toggle direction
+                    currentOrdering.direction = currentOrdering.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentOrdering.field = key;
+                    currentOrdering.direction = 'asc';
+                }
+                currentPage = 1; // Reset to first page on ordering change
+                renderTaskListTable(1);
+            });
+        });
 
         // Add event listeners for mark as done buttons
         container.querySelectorAll('.mark-done-btn').forEach(btn => {
@@ -261,138 +352,129 @@ async function renderTaskListTable() {
                 }
             });
         });
+
+        // Add event listeners for edit and delete buttons
+        container.querySelectorAll('.edit-task-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const key = btn.getAttribute('data-key');
+                const task = data.find(t => t.key === key);
+                if (!task) return;
+                // Fill modal fields
+                document.getElementById('edit-key').value = task.key;
+                document.getElementById('edit-name').value = task.name || '';
+                document.getElementById('edit-job_no').value = task.job_no || '';
+                document.getElementById('edit-image_no').value = task.image_no || '';
+                document.getElementById('edit-position_no').value = task.position_no || '';
+                document.getElementById('edit-quantity').value = task.quantity || '';
+                document.getElementById('edit-estimated_hours').value = task.estimated_hours || '';
+                document.getElementById('edit-machine_fk').value = task.machine_fk || '';
+                document.getElementById('edit-finish_time').value = task.finish_time ? (typeof task.finish_time === 'string' && task.finish_time.length >= 10 ? task.finish_time.substring(0,10) : '') : '';
+                // Show modal
+                const modal = document.getElementById('edit-task-modal');
+                modal.style.display = 'flex';
+            });
+        });
+        container.querySelectorAll('.delete-task-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const key = btn.getAttribute('data-key');
+                if (!key) return;
+                if (!window.confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+                try {
+                    const resp = await authedFetch(`${backendBase}/machining/tasks/${key}/`, {
+                        method: 'DELETE',
+                    });
+                    if (!resp.ok) throw new Error('Silme başarısız');
+                    await renderTaskListTable(currentPage);
+                } catch (err) {
+                    alert('Hata: ' + err.message);
+                }
+            });
+        });
+        // Modal event listeners
+        const modal = document.getElementById('edit-task-modal');
+        if (modal) {
+            // Close modal
+            document.getElementById('close-edit-modal').onclick = () => { modal.style.display = 'none'; };
+            document.getElementById('cancel-edit-modal').onclick = () => { modal.style.display = 'none'; };
+            // Save changes
+            document.getElementById('save-edit-modal').onclick = async (e) => {
+                e.preventDefault();
+                const key = document.getElementById('edit-key').value;
+                const payload = {
+                    name: document.getElementById('edit-name').value,
+                    job_no: document.getElementById('edit-job_no').value,
+                    image_no: document.getElementById('edit-image_no').value,
+                    position_no: document.getElementById('edit-position_no').value,
+                    quantity: document.getElementById('edit-quantity').value ? parseInt(document.getElementById('edit-quantity').value) : null,
+                    estimated_hours: document.getElementById('edit-estimated_hours').value ? parseFloat(document.getElementById('edit-estimated_hours').value) : null,
+                    machine_fk: document.getElementById('edit-machine_fk').value,
+                    finish_time: document.getElementById('edit-finish_time').value || null
+                };
+                try {
+                    const resp = await authedFetch(`${backendBase}/machining/tasks/${key}/`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!resp.ok) throw new Error('Güncelleme başarısız');
+                    modal.style.display = 'none';
+                    await renderTaskListTable(currentPage);
+                } catch (err) {
+                    alert('Hata: ' + err.message);
+                }
+            };
+        }
+
+        // Add event listeners for pagination
+        container.querySelectorAll('.pagination-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const page = parseInt(btn.getAttribute('data-page'));
+                if (!isNaN(page)) {
+                    currentPage = page;
+                    renderTaskListTable(page);
+                }
+            });
+        });
     } catch (err) {
         container.innerHTML = `<div class="text-danger">Hata: ${err.message}</div>`;
     }
 }
 
-// ============================================================================
-// TEMPORARY JIRA SYNC FUNCTION - REMOVE LATER
-// ============================================================================
-
-async function handleJiraSync() {
-    const syncBtn = document.getElementById('sync-jira-btn');
-    const originalText = syncBtn.innerHTML;
-    
-    try {
-        syncBtn.disabled = true;
-        syncBtn.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Syncing...';
-        
-        // First, fetch machines to map names to IDs
-        const machinesResponse = await authedFetch(`${backendBase}/machines/`);
-        if (!machinesResponse.ok) {
-            throw new Error('Failed to fetch machines list');
-        }
-        const machines = await machinesResponse.json();
-        
-        // Create a mapping of machine names to IDs
-        const machineNameToId = {};
-        machines.forEach(machine => {
-            machineNameToId[machine.name] = machine.id;
-        });
-        
-        console.log('Machine mapping:', machineNameToId);
-        
-        const jql = `project=TI AND status="To Do"`;
-        const encodedJql = encodeURIComponent(jql);
-        
-        const url = `${jiraBase}/rest/api/3/search?jql=${encodedJql}&maxResults=1000&fields=summary,customfield_10117,customfield_10184,customfield_10185,customfield_10187,customfield_11411,duedate,timeoriginalestimate`;
-        const res = await authedFetch(proxyBase + encodeURIComponent(url), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        console.log('Jira issues fetched:', data.issues.length);
-        
-        // Map Jira issues to database format
-        const mappedTasks = data.issues.map(issue => {
-            const fields = issue.fields;
-            
-            // Convert timeoriginalestimate from seconds to hours
-            let estimatedHours = null;
-            if (fields.timeoriginalestimate) {
-                estimatedHours = Math.round((fields.timeoriginalestimate / 3600) * 100) / 100; // Convert seconds to hours, round to 2 decimal places
-            }
-            
-            // Convert duedate to timestamp if it exists
-            let finishTime = null;
-            if (fields.duedate) {
-                finishTime = new Date(fields.duedate).toISOString().split('T')[0]; // Convert to YYYY-MM-DD format
-            }
-            
-            // Map machine name to machine ID
-            let machineId = null;
-            if (fields.customfield_11411 && fields.customfield_11411.value) {
-                machineId = machineNameToId[fields.customfield_11411.value] || null;
-                if (!machineId) {
-                    console.warn(`Machine not found in database: ${fields.customfield_11411.value}`);
-                }
-            }
-            
-            return {
-                key: issue.key,
-                name: fields.summary || '',
-                job_no: fields.customfield_10117 || null,
-                image_no: fields.customfield_10184 || null,
-                position_no: fields.customfield_10185 || null,
-                quantity: fields.customfield_10187 ? parseInt(fields.customfield_10187) : null,
-                estimated_hours: estimatedHours,
-                finish_time: finishTime,
-                machine_fk: machineId,
-                is_hold_task: false // Default to false, you might want to add logic to detect hold tasks
-            };
-        });
-        
-        console.log('Mapped tasks:', mappedTasks);
-        
-        // Send individual PATCH requests for each task
-        let updatedCount = 0;
-        let errorCount = 0;
-        const errors = [];
-        
-        for (const task of mappedTasks) {
-            try {
-                const patchResponse = await authedFetch(`${backendBase}/machining/tasks/${task.key}/`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(task)
-                });
-                
-                if (patchResponse.ok) {
-                    updatedCount++;
-                } else {
-                    const errorData = await patchResponse.json();
-                    errors.push(`${task.key}: ${errorData.message || 'Update failed'}`);
-                    errorCount++;
-                }
-            } catch (error) {
-                errors.push(`${task.key}: ${error.message}`);
-                errorCount++;
-            }
-        }
-        
-        // Show results
-        let message = `Sync completed!\n\nProcessed: ${mappedTasks.length} issues\nUpdated: ${updatedCount} tasks\nErrors: ${errorCount} tasks`;
-        
-        if (errors.length > 0) {
-            message += `\n\nError details:\n${errors.slice(0, 5).join('\n')}`;
-            if (errors.length > 5) {
-                message += `\n... and ${errors.length - 5} more errors`;
-            }
-        }
-        
-        alert(message);
-        
-    } catch (error) {
-        console.error('Jira sync error:', error);
-        alert(`Sync failed: ${error.message}`);
-    } finally {
-        syncBtn.disabled = false;
-        syncBtn.innerHTML = originalText;
+function renderPagination(result, currentPage) {
+    // result: API response object with count, next, previous, etc.
+    const pageSize = result.results.length;
+    const totalCount = result.count || 0;
+    const pageCount = pageSize > 0 ? Math.ceil(totalCount / pageSize) : 1;
+    if (pageCount <= 1) return '';
+    let html = '<nav><ul class="pagination justify-content-center mt-3">';
+    // Previous button
+    html += `<li class="page-item${currentPage === 1 ? ' disabled' : ''}"><button class="page-link pagination-btn" data-page="${currentPage - 1}" ${currentPage === 1 ? 'tabindex="-1" aria-disabled="true"' : ''}>Önceki</button></li>`;
+    // Page numbers (show up to 5 pages, with ... if needed)
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(pageCount, currentPage + 2);
+    if (currentPage <= 3) {
+        endPage = Math.min(5, pageCount);
     }
+    if (currentPage >= pageCount - 2) {
+        startPage = Math.max(1, pageCount - 4);
+    }
+    if (startPage > 1) {
+        html += `<li class="page-item"><button class="page-link pagination-btn" data-page="1">1</button></li>`;
+        if (startPage > 2) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+    }
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<li class="page-item${i === currentPage ? ' active' : ''}"><button class="page-link pagination-btn" data-page="${i}">${i}</button></li>`;
+    }
+    if (endPage < pageCount) {
+        if (endPage < pageCount - 1) {
+            html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+        html += `<li class="page-item"><button class="page-link pagination-btn" data-page="${pageCount}">${pageCount}</button></li>`;
+    }
+    // Next button
+    html += `<li class="page-item${currentPage === pageCount ? ' disabled' : ''}"><button class="page-link pagination-btn" data-page="${currentPage + 1}" ${currentPage === pageCount ? 'tabindex="-1" aria-disabled="true"' : ''}>Sonraki</button></li>`;
+    html += '</ul></nav>';
+    return html;
 }
-
-// ============================================================================
-// END TEMPORARY SECTION
-// ============================================================================ 
