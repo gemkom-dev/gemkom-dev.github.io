@@ -1,3 +1,6 @@
+import { authedFetch } from '../authService.js';
+import { backendBase } from '../base.js';
+
 // admin/bulkTaskCreate.js
 export function showBulkTaskCreate() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
@@ -14,6 +17,18 @@ export function showBulkTaskCreate() {
         { key: 'finish_time', label: 'Bitiş Tarihi' }
     ];
     let rows = [Object.fromEntries(columns.map(c => [c.key, '']))];
+    let machines = []; // Store machines list
+    
+    async function loadMachines() {
+        try {
+            const { fetchMachines } = await import('../generic/machines.js');
+            machines = await fetchMachines('machining');
+        } catch (error) {
+            console.error('Error loading machines:', error);
+            machines = [];
+        }
+    }
+    
     function renderTable() {
         let html = `<h4>Toplu Görev Oluştur</h4><form id="bulk-task-form"><div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr>`;
         for (const col of columns) {
@@ -23,7 +38,18 @@ export function showBulkTaskCreate() {
         rows.forEach((row, i) => {
             html += `<tr>`;
             for (const col of columns) {
-                html += `<td><input type="${col.key === 'quantity' || col.key === 'estimated_hours' ? 'number' : (col.key === 'finish_time' ? 'date' : 'text')}" class="form-control bulk-input" data-row="${i}" data-key="${col.key}" value="${row[col.key] || ''}"></td>`;
+                if (col.key === 'machine_fk') {
+                    // Render machine dropdown
+                    html += `<td><select class="form-control bulk-input" data-row="${i}" data-key="${col.key}">`;
+                    html += `<option value="">Makine seçin...</option>`;
+                    machines.forEach(machine => {
+                        const selected = row[col.key] == machine.id ? 'selected' : '';
+                        html += `<option value="${machine.id}" ${selected}>${machine.name}</option>`;
+                    });
+                    html += `</select></td>`;
+                } else {
+                    html += `<td><input type="${col.key === 'quantity' || col.key === 'estimated_hours' ? 'number' : (col.key === 'finish_time' ? 'date' : 'text')}" class="form-control bulk-input" data-row="${i}" data-key="${col.key}" value="${row[col.key] || ''}"></td>`;
+                }
             }
             html += `<td>
                 <button type="button" class="btn btn-sm btn-secondary bulk-duplicate" data-row="${i}">Kopyala</button>
@@ -41,6 +67,13 @@ export function showBulkTaskCreate() {
                 const row = parseInt(input.getAttribute('data-row'));
                 const key = input.getAttribute('data-key');
                 rows[row][key] = input.value;
+            });
+        });
+        document.querySelectorAll('.bulk-input').forEach(select => {
+            select.addEventListener('change', (e) => {
+                const row = parseInt(select.getAttribute('data-row'));
+                const key = select.getAttribute('data-key');
+                rows[row][key] = select.value;
             });
         });
         document.querySelectorAll('.bulk-duplicate').forEach(btn => {
@@ -74,11 +107,11 @@ export function showBulkTaskCreate() {
                 position_no: row.position_no,
                 quantity: row.quantity ? parseInt(row.quantity) : null,
                 estimated_hours: row.estimated_hours ? parseFloat(row.estimated_hours) : null,
-                machine_fk: row.machine_fk,
+                machine_fk: row.machine_fk ? parseInt(row.machine_fk) : null,
                 finish_time: row.finish_time || null
             }));
             try {
-                const resp = await fetch('/machining/tasks/bulk-create/', {
+                const resp = await authedFetch(`${backendBase}/machining/tasks/bulk-create/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -92,5 +125,9 @@ export function showBulkTaskCreate() {
             }
         };
     }
-    renderTable();
+    
+    // Load machines first, then render table
+    loadMachines().then(() => {
+        renderTable();
+    });
 } 
