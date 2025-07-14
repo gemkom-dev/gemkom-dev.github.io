@@ -1,17 +1,18 @@
 import { backendBase, jiraBase, proxyBase } from '../base.js';
 import { authedFetch } from '../authService.js';
+import { fetchMachines } from '../generic/machines.js';
 
 const columns = [
     { key: 'key', label: 'TI No' },
     { key: 'name', label: 'Ad' },
     { key: 'job_no', label: 'İş No' },
     { key: 'image_no', label: 'Resim No' },
-    { key: 'position_no', label: 'Pozisyon No' },
+    { key: 'position_no', label: 'Poz No' },
     { key: 'quantity', label: 'Adet' },
-    { key: 'estimated_hours', label: 'Tahmini Saat' },
     { key: 'machine_name', label: 'Makine' },
-    { key: 'finish_time', label: 'Bitiş Tarihi' },
+    { key: 'estimated_hours', label: 'Tahmini Saat' },
     { key: 'total_hours_spent', label: 'Harcanan Saat' },
+    { key: 'finish_time', label: 'Bitmesi Gereken Tarih' },
     { key: 'completion_date', label: 'Tamamlanma Tarihi' },
     { key: 'completed_by_username', label: 'Tamamlayan' },
     { key: 'status', label: 'Durum' },
@@ -22,7 +23,9 @@ const columns = [
 let currentPage = 1;
 let lastQueryParams = '';
 // Track ordering
-let currentOrdering = { field: null, direction: 'asc' };
+let currentOrdering = { field: 'job_no', direction: 'asc' };
+// Store machines for dropdown
+let availableMachines = [];
 
 function buildTaskListQuery(page = 1) {
     let key = document.getElementById('key').value.trim();
@@ -73,9 +76,59 @@ export async function showTaskListSection() {
     const mainContent = document.querySelector('.admin-main-content .container-fluid');
     if (!mainContent) return;
     mainContent.innerHTML = `
+        <style>
+            .editable-cell {
+                position: relative;
+                transition: background-color 0.2s;
+            }
+            .editable-cell:hover {
+                background-color: #f8f9fa !important;
+                border: 1px solid #007bff !important;
+            }
+            .editable-cell input,
+            .editable-cell select {
+                border: none;
+                background: transparent;
+                width: 100%;
+                padding: 2px 4px;
+                font-size: inherit;
+            }
+            .editable-cell input:focus,
+            .editable-cell select:focus {
+                outline: 2px solid #007bff;
+                background: white;
+            }
+            .editable-cell.editing {
+                background-color: #fff3cd !important;
+                border: 2px solid #ffc107 !important;
+            }
+            
+            /* Prevent text wrapping for specific columns */
+            .table th:nth-child(1),
+            .table td:nth-child(1) {
+                white-space: nowrap;
+                min-width: 80px;
+            }
+            
+            .table th:nth-child(3),
+            .table td:nth-child(3) {
+                white-space: nowrap;
+                min-width: 100px;
+            }
+            
+            /* Ensure table can scroll horizontally */
+            .table-responsive {
+                overflow-x: auto;
+            }
+        </style>
         <div class="row mb-3">
             <div class="col-12">
-                <h3>Talaşlı İmalat İşler</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3 class="mb-0">Talaşlı İmalat İşler</h3>
+                    <button type="button" id="show-hold-tasks-btn" class="btn btn-warning">
+                        <i class="fas fa-pause"></i> Mazeret İşleri (W)
+                    </button>
+                </div>
                 <form id="task-list-filters" class="row g-3 align-items-end">
                     <div class="col-md-2">
                         <label for="key" class="form-label">TI Numarası</label>
@@ -113,7 +166,7 @@ export async function showTaskListSection() {
                         <label for="status_filter" class="form-label">Durum</label>
                         <select class="form-select" id="status_filter">
                             <option value="">Hepsi</option>
-                            <option value="active">Aktif</option>
+                            <option value="active" selected>Aktif</option>
                             <option value="completed">Tamamlanmış</option>
                         </select>
                     </div>
@@ -135,9 +188,21 @@ export async function showTaskListSection() {
         await renderTaskListTable(1);
     });
     
+    // Fetch machines for dropdown
+    try {
+        availableMachines = await fetchMachines('machining');
+    } catch (error) {
+        console.error('Error fetching machines:', error);
+        availableMachines = [];
+    }
     
     // Initial fetch
     document.getElementById('fetch-task-list-btn').click();
+
+    // Add event listener for hold tasks button
+    document.getElementById('show-hold-tasks-btn').addEventListener('click', async () => {
+        await showHoldTasks();
+    });
 
     // Add Enter key support for all filter inputs
     document.querySelectorAll('#task-list-filters input, #task-list-filters select').forEach(input => {
@@ -185,40 +250,60 @@ async function renderTaskListTable(page = currentPage) {
             html += '<tr>';
             for (const col of columns) {
                 let val;
+                let isEditable = false;
+                let inputType = 'text';
+                let inputValue = '';
+                
                 if (col.key === 'status') {
-                    if (!row.completion_date) {
-                        val = '<span class="badge bg-success">Aktif</span>';
-                    } else {
-                        val = '<span class="badge bg-primary">Tamamlandı</span>';
-                    }
+                    const isCompleted = !!row.completion_date;
+                    val = isCompleted ? 
+                        '<span class="badge bg-primary">Tamamlandı</span>' : 
+                        '<span class="badge bg-success">Aktif</span>';
+                    isEditable = true;
+                    inputType = 'select';
+                    inputValue = isCompleted ? 'completed' : 'active';
                 } else if (col.key === 'key') {
                     val = row.key ? `<a href="https://gemkom-1.atlassian.net/browse/${row.key}" target="_blank">${row.key}</a>` : '';
+                    // Key is not editable
                 } else if (col.key === 'completion_date') {
                     val = row.completion_date ? new Date(row.completion_date).toLocaleString('tr-TR') : '';
+                    // Completion date is not editable (managed by status)
                 } else if (col.key === 'finish_time') {
                     val = row.finish_time ? new Date(row.finish_time).toLocaleDateString('tr-TR') : '';
+                    isEditable = true;
+                    inputType = 'date';
+                    inputValue = row.finish_time ? (typeof row.finish_time === 'string' && row.finish_time.length >= 10 ? row.finish_time.substring(0,10) : '') : '';
                 } else if (col.key === 'estimated_hours') {
                     val = row.estimated_hours ? `${row.estimated_hours}` : '';
+                    isEditable = true;
+                    inputType = 'number';
+                    inputValue = row.estimated_hours || '';
                 } else if (col.key === 'total_hours_spent') {
                     val = row.total_hours_spent ? `${row.total_hours_spent}` : '';
+                    // Total hours spent is not editable (calculated)
                 } else if (col.key === 'machine_name') {
                     val = row.machine_name ? row.machine_name : '';
+                    isEditable = true;
+                    inputType = 'machine_select';
+                    inputValue = row.machine_fk || '';
                 } else if (col.key === 'actions') {
-                    val = '';
-                    if (!row.completion_date) {
-                        val += `<button class="btn btn-sm btn-success mark-done-btn" data-key="${row.key}">Bitir</button> `;
-                    } else {
-                        val += `<button class="btn btn-sm btn-warning unmark-done-btn" data-key="${row.key}">Tekrar Aç</button> `;
-                    }
-                    val += `<button class="btn btn-sm btn-primary edit-task-btn" data-key="${row.key}">Düzenle</button> `;
-                    val += `<button class="btn btn-sm btn-danger delete-task-btn" data-key="${row.key}">Sil</button>`;
+                    val = `<button class="btn btn-sm btn-danger delete-task-btn" data-key="${row.key}">X</button>`;
+                    // Only keep delete button, remove edit and status buttons
                 } else if (col.key === 'completed_by_username'){
                     val = row['completed_by_username'] ? row['completed_by_username'] : '';
-                }
-                else {
+                    // Completed by is not editable (managed by system)
+                } else {
                     val = row[col.key] == null ? '' : row[col.key];
+                    isEditable = true;
+                    inputType = 'text';
+                    inputValue = row[col.key] || '';
                 }
-                html += `<td>${val}</td>`;
+                
+                if (isEditable && col.key !== 'actions') {
+                    html += `<td class="editable-cell" data-key="${row.key}" data-field="${col.key}" data-type="${inputType}" data-value="${inputValue}" style="cursor:pointer;">${val}</td>`;
+                } else {
+                    html += `<td>${val}</td>`;
+                }
             }
             html += '</tr>';
         }
@@ -226,62 +311,7 @@ async function renderTaskListTable(page = currentPage) {
         // Pagination controls (bottom)
         html += renderPagination(result, page);
         html += `</div>`;
-        // Add edit modal (hidden by default)
-        if (!document.getElementById('edit-task-modal')) {
-            const modalHtml = `
-            <div class="modal" tabindex="-1" id="edit-task-modal" style="display:none; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:1050; align-items:center; justify-content:center;">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Görevi Düzenle</h5>
-                            <button type="button" class="btn-close" id="close-edit-modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="edit-task-form">
-                                <div class="mb-2">
-                                    <label class="form-label">Ad</label>
-                                    <input type="text" class="form-control" id="edit-name" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">İş No</label>
-                                    <input type="text" class="form-control" id="edit-job_no">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Resim No</label>
-                                    <input type="text" class="form-control" id="edit-image_no">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Pozisyon No</label>
-                                    <input type="text" class="form-control" id="edit-position_no">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Adet</label>
-                                    <input type="number" class="form-control" id="edit-quantity">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Tahmini Saat</label>
-                                    <input type="number" step="0.01" class="form-control" id="edit-estimated_hours">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Makine</label>
-                                    <input type="text" class="form-control" id="edit-machine_fk">
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Bitiş Tarihi</label>
-                                    <input type="date" class="form-control" id="edit-finish_time">
-                                </div>
-                                <input type="hidden" id="edit-key">
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" id="cancel-edit-modal">İptal</button>
-                            <button type="submit" class="btn btn-primary" id="save-edit-modal">Kaydet</button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        }
+        
         container.innerHTML = html;
 
         // Add event listeners for sortable columns
@@ -301,79 +331,89 @@ async function renderTaskListTable(page = currentPage) {
             });
         });
 
-        // Add event listeners for mark as done buttons
-        container.querySelectorAll('.mark-done-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const key = btn.getAttribute('data-key');
-                btn.disabled = true;
-                btn.textContent = 'Gönderiliyor...';
-                try {
-                    const resp = await authedFetch(`${backendBase}/machining/tasks/mark-completed/`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ key })
+        // Add event listeners for editable cells
+        container.querySelectorAll('.editable-cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                const key = this.getAttribute('data-key');
+                const field = this.getAttribute('data-field');
+                const type = this.getAttribute('data-type');
+                const currentValue = this.getAttribute('data-value');
+                
+                // Don't edit if already editing
+                if (this.querySelector('input, select')) return;
+                
+                let input;
+                if (type === 'select') {
+                    input = document.createElement('select');
+                    input.className = 'form-control form-control-sm';
+                    input.innerHTML = `
+                        <option value="active" ${currentValue === 'active' ? 'selected' : ''}>Aktif</option>
+                        <option value="completed" ${currentValue === 'completed' ? 'selected' : ''}>Tamamlandı</option>
+                    `;
+                } else if (type === 'machine_select') {
+                    input = document.createElement('select');
+                    input.className = 'form-control form-control-sm';
+                    input.innerHTML = '<option value="">Makine Seçin</option>';
+                    
+                    // Add machine options
+                    availableMachines.forEach(machine => {
+                        const selected = currentValue == machine.id ? 'selected' : '';
+                        input.innerHTML += `<option value="${machine.id}" ${selected}>${machine.name}</option>`;
                     });
-                    if (!resp.ok) throw new Error('İşaretleme başarısız');
-                    btn.textContent = 'Tamamlandı';
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-secondary');
-                    // Optionally refresh the table
-                    await renderTaskListTable();
-                } catch (err) {
-                    btn.disabled = false;
-                    btn.textContent = 'Tamamlandı Olarak İşaretle';
-                    alert('Hata: ' + err.message);
+                } else {
+                    input = document.createElement('input');
+                    input.type = type;
+                    input.className = 'form-control form-control-sm';
+                    input.value = currentValue;
+                }
+                
+                // Store original content
+                this.setAttribute('data-original-content', this.innerHTML);
+                
+                // Add editing class for visual feedback
+                this.classList.add('editing');
+                
+                // Replace content with input
+                this.innerHTML = '';
+                this.appendChild(input);
+                input.focus();
+                
+                // Handle save on Enter or blur
+                const saveChanges = async () => {
+                    const newValue = input.value;
+                    if (newValue !== currentValue) {
+                        // Show loading state
+                        this.innerHTML = '<small class="text-muted">Kaydediliyor...</small>';
+                        await updateTaskField(key, field, newValue, type);
+                    } else {
+                        this.innerHTML = this.getAttribute('data-original-content');
+                        this.removeAttribute('data-original-content');
+                        this.classList.remove('editing');
+                    }
+                };
+                
+                const handleKeyDown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveChanges();
+                    } else if (e.key === 'Escape') {
+                        this.innerHTML = this.getAttribute('data-original-content');
+                        this.removeAttribute('data-original-content');
+                        this.classList.remove('editing');
+                    }
+                };
+                
+                input.addEventListener('keydown', handleKeyDown);
+                input.addEventListener('blur', saveChanges);
+                
+                // For select elements, save on change
+                if (type === 'select' || type === 'machine_select') {
+                    input.addEventListener('change', saveChanges);
                 }
             });
         });
 
-        // Add event listeners for unmark as done buttons
-        container.querySelectorAll('.unmark-done-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const key = btn.getAttribute('data-key');
-                btn.disabled = true;
-                btn.textContent = 'Gönderiliyor...';
-                try {
-                    const resp = await authedFetch(`${backendBase}/machining/tasks/unmark-completed/`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ key })
-                    });
-                    if (!resp.ok) throw new Error('İşaretleme başarısız');
-                    btn.textContent = 'Tamamlanmadı';
-                    btn.classList.remove('btn-warning');
-                    btn.classList.add('btn-secondary');
-                    // Optionally refresh the table
-                    await renderTaskListTable();
-                } catch (err) {
-                    btn.disabled = false;
-                    btn.textContent = 'Tamamlanmadı Olarak İşaretle';
-                    alert('Hata: ' + err.message);
-                }
-            });
-        });
-
-        // Add event listeners for edit and delete buttons
-        container.querySelectorAll('.edit-task-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const key = btn.getAttribute('data-key');
-                const task = data.find(t => t.key === key);
-                if (!task) return;
-                // Fill modal fields
-                document.getElementById('edit-key').value = task.key;
-                document.getElementById('edit-name').value = task.name || '';
-                document.getElementById('edit-job_no').value = task.job_no || '';
-                document.getElementById('edit-image_no').value = task.image_no || '';
-                document.getElementById('edit-position_no').value = task.position_no || '';
-                document.getElementById('edit-quantity').value = task.quantity || '';
-                document.getElementById('edit-estimated_hours').value = task.estimated_hours || '';
-                document.getElementById('edit-machine_fk').value = task.machine_fk || '';
-                document.getElementById('edit-finish_time').value = task.finish_time ? (typeof task.finish_time === 'string' && task.finish_time.length >= 10 ? task.finish_time.substring(0,10) : '') : '';
-                // Show modal
-                const modal = document.getElementById('edit-task-modal');
-                modal.style.display = 'flex';
-            });
-        });
+        // Add event listeners for delete buttons
         container.querySelectorAll('.delete-task-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const key = btn.getAttribute('data-key');
@@ -390,40 +430,6 @@ async function renderTaskListTable(page = currentPage) {
                 }
             });
         });
-        // Modal event listeners
-        const modal = document.getElementById('edit-task-modal');
-        if (modal) {
-            // Close modal
-            document.getElementById('close-edit-modal').onclick = () => { modal.style.display = 'none'; };
-            document.getElementById('cancel-edit-modal').onclick = () => { modal.style.display = 'none'; };
-            // Save changes
-            document.getElementById('save-edit-modal').onclick = async (e) => {
-                e.preventDefault();
-                const key = document.getElementById('edit-key').value;
-                const payload = {
-                    name: document.getElementById('edit-name').value,
-                    job_no: document.getElementById('edit-job_no').value,
-                    image_no: document.getElementById('edit-image_no').value,
-                    position_no: document.getElementById('edit-position_no').value,
-                    quantity: document.getElementById('edit-quantity').value ? parseInt(document.getElementById('edit-quantity').value) : null,
-                    estimated_hours: document.getElementById('edit-estimated_hours').value ? parseFloat(document.getElementById('edit-estimated_hours').value) : null,
-                    machine_fk: document.getElementById('edit-machine_fk').value,
-                    finish_time: document.getElementById('edit-finish_time').value || null
-                };
-                try {
-                    const resp = await authedFetch(`${backendBase}/machining/tasks/${key}/`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!resp.ok) throw new Error('Güncelleme başarısız');
-                    modal.style.display = 'none';
-                    await renderTaskListTable(currentPage);
-                } catch (err) {
-                    alert('Hata: ' + err.message);
-                }
-            };
-        }
 
         // Add event listeners for pagination
         container.querySelectorAll('.pagination-btn').forEach(btn => {
@@ -437,6 +443,58 @@ async function renderTaskListTable(page = currentPage) {
         });
     } catch (err) {
         container.innerHTML = `<div class="text-danger">Hata: ${err.message}</div>`;
+    }
+}
+
+// New function to handle field updates
+async function updateTaskField(key, field, value, type) {
+    try {
+        let payload = {};
+        
+        // Handle different field types
+        if (field === 'status') {
+            if (value === 'completed') {
+                const resp = await authedFetch(`${backendBase}/machining/tasks/mark-completed/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                if (!resp.ok) throw new Error('Durum güncelleme başarısız');
+            } else {
+                const resp = await authedFetch(`${backendBase}/machining/tasks/unmark-completed/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                if (!resp.ok) throw new Error('Durum güncelleme başarısız');
+            }
+        } else {
+            // Handle other fields
+            if (type === 'number') {
+                payload[field] = value ? parseFloat(value) : null;
+            } else if (type === 'date') {
+                payload[field] = value || null;
+            } else if (type === 'machine_select') {
+                payload['machine_fk'] = value ? parseInt(value) : null;
+            } else {
+                payload[field] = value;
+            }
+            
+            const resp = await authedFetch(`${backendBase}/machining/tasks/${key}/`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) throw new Error('Güncelleme başarısız');
+        }
+        
+        // Refresh the table to show updated data
+        await renderTaskListTable(currentPage);
+        
+    } catch (err) {
+        alert('Hata: ' + err.message);
+        // Refresh table to revert any visual changes
+        await renderTaskListTable(currentPage);
     }
 }
 
@@ -477,4 +535,115 @@ function renderPagination(result, currentPage) {
     html += `<li class="page-item${currentPage === pageCount ? ' disabled' : ''}"><button class="page-link pagination-btn" data-page="${currentPage + 1}" ${currentPage === pageCount ? 'tabindex="-1" aria-disabled="true"' : ''}>Sonraki</button></li>`;
     html += '</ul></nav>';
     return html;
+}
+
+async function showHoldTasks() {
+    try {
+        const url = `${backendBase}/machining/hold-tasks/`;
+        const resp = await authedFetch(url);
+        if (!resp.ok) throw new Error('Bekleyen işler alınamadı');
+        const result = await resp.json();
+        const data = result.results || [];
+        
+        // Create or update modal
+        let modalHtml = `
+        <div class="modal" tabindex="-1" id="hold-tasks-modal" style="display:none; background:rgba(0,0,0,0.5); position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:1050; align-items:center; justify-content:center;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Bekleyen İşler (${data.length})</h5>
+                        <button type="button" class="btn-close" id="close-hold-tasks-modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="hold-tasks-content">
+                            <div>Yükleniyor...</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="close-hold-tasks-btn">Kapat</button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        // Remove existing modal if present
+        const existingModal = document.getElementById('hold-tasks-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const modal = document.getElementById('hold-tasks-modal');
+        const content = document.getElementById('hold-tasks-content');
+        
+        if (data.length === 0) {
+            content.innerHTML = '<div class="alert alert-info">Bekleyen iş bulunamadı.</div>';
+        } else {
+            let html = `<div class="table-responsive">`;
+            html += `<table class="table table-bordered table-sm"><thead><tr>`;
+            
+            // Define columns for hold tasks
+            const holdTaskColumns = [
+                { key: 'key', label: 'TI No' },
+                { key: 'name', label: 'Ad' }
+            ];
+            
+            for (const col of holdTaskColumns) {
+                html += `<th>${col.label}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            // Sort data by key
+            const sortedData = data.sort((a, b) => {
+                if (!a.key && !b.key) return 0;
+                if (!a.key) return 1;
+                if (!b.key) return -1;
+                return a.key.localeCompare(b.key);
+            });
+            
+            for (const row of sortedData) {
+                html += '<tr>';
+                for (const col of holdTaskColumns) {
+                    let val;
+                    if (col.key === 'key') {
+                        val = row.key || '';
+                    } else {
+                        val = row[col.key] == null ? '' : row[col.key];
+                    }
+                    html += `<td>${val}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += `</tbody></table>`;
+            html += `</div>`;
+            
+            content.innerHTML = html;
+        }
+        
+        // Show modal
+        modal.style.display = 'flex';
+        
+        // Add event listeners for modal controls
+        document.getElementById('close-hold-tasks-modal').onclick = () => { modal.style.display = 'none'; };
+        document.getElementById('close-hold-tasks-btn').onclick = () => { modal.style.display = 'none'; };
+        
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+    } catch (err) {
+        // Show error in modal
+        const modal = document.getElementById('hold-tasks-modal');
+        if (modal) {
+            const content = document.getElementById('hold-tasks-content');
+            content.innerHTML = `<div class="text-danger">Hata: ${err.message}</div>`;
+        } else {
+            alert('Hata: ' + err.message);
+        }
+    }
 }

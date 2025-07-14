@@ -18,6 +18,8 @@ export function showBulkTaskCreate() {
     ];
     let rows = [Object.fromEntries(columns.map(c => [c.key, '']))];
     let machines = []; // Store machines list
+    let hasUnsavedChanges = false; // Track unsaved changes
+    let initialRows = JSON.stringify(rows); // Store initial state
     
     async function loadMachines() {
         try {
@@ -27,6 +29,35 @@ export function showBulkTaskCreate() {
             console.error('Error loading machines:', error);
             machines = [];
         }
+    }
+    
+    // Function to check if there are unsaved changes
+    function checkForUnsavedChanges() {
+        const currentRows = JSON.stringify(rows);
+        hasUnsavedChanges = currentRows !== initialRows;
+        return hasUnsavedChanges;
+    }
+    
+    // Function to update initial state (called after successful save)
+    function updateInitialState() {
+        initialRows = JSON.stringify(rows);
+        hasUnsavedChanges = false;
+    }
+    
+    // Add beforeunload event listener
+    function setupBeforeUnload() {
+        window.addEventListener('beforeunload', (e) => {
+            if (checkForUnsavedChanges()) {
+                e.preventDefault();
+                e.returnValue = 'Kaydedilmemiş değişiklikler var. Sayfadan ayrılmak istediğinize emin misiniz?';
+                return 'Kaydedilmemiş değişiklikler var. Sayfadan ayrılmak istediğinize emin misiniz?';
+            }
+        });
+    }
+    
+    // Remove beforeunload event listener when leaving the page
+    function cleanupBeforeUnload() {
+        window.removeEventListener('beforeunload', setupBeforeUnload);
     }
     
     function renderTable() {
@@ -58,15 +89,20 @@ export function showBulkTaskCreate() {
         });
         html += `</tbody></table></div>
         <button type="button" class="btn btn-success" id="bulk-add-row">Satır Ekle</button>
-        <button type="submit" class="btn btn-primary ms-2">Toplu Oluştur</button>
+        <button type="submit" class="btn btn-primary ms-2">Oluştur</button>
         </form>`;
         mainContent.innerHTML = html;
+        
+        // Setup beforeunload event listener
+        setupBeforeUnload();
+        
         // Add event listeners
         document.querySelectorAll('.bulk-input').forEach(input => {
             input.addEventListener('input', (e) => {
                 const row = parseInt(input.getAttribute('data-row'));
                 const key = input.getAttribute('data-key');
                 rows[row][key] = input.value;
+                checkForUnsavedChanges(); // Check for changes after input
             });
         });
         document.querySelectorAll('.bulk-input').forEach(select => {
@@ -74,6 +110,7 @@ export function showBulkTaskCreate() {
                 const row = parseInt(select.getAttribute('data-row'));
                 const key = select.getAttribute('data-key');
                 rows[row][key] = select.value;
+                checkForUnsavedChanges(); // Check for changes after selection
             });
         });
         document.querySelectorAll('.bulk-duplicate').forEach(btn => {
@@ -81,6 +118,7 @@ export function showBulkTaskCreate() {
                 const rowIdx = parseInt(btn.getAttribute('data-row'));
                 const newRow = { ...rows[rowIdx] };
                 rows.splice(rowIdx + 1, 0, newRow);
+                checkForUnsavedChanges(); // Check for changes after duplication
                 renderTable();
             });
         });
@@ -89,12 +127,14 @@ export function showBulkTaskCreate() {
                 const rowIdx = parseInt(btn.getAttribute('data-row'));
                 if (rows.length > 1) {
                     rows.splice(rowIdx, 1);
+                    checkForUnsavedChanges(); // Check for changes after removal
                     renderTable();
                 }
             });
         });
         document.getElementById('bulk-add-row').onclick = () => {
             rows.push(Object.fromEntries(columns.map(c => [c.key, ''])));
+            checkForUnsavedChanges(); // Check for changes after adding row
             renderTable();
         };
         document.getElementById('bulk-task-form').onsubmit = async (e) => {
@@ -119,6 +159,7 @@ export function showBulkTaskCreate() {
                 if (!resp.ok) throw new Error('Toplu görev oluşturulamadı');
                 alert('Görevler başarıyla oluşturuldu!');
                 rows = [Object.fromEntries(columns.map(c => [c.key, '']))];
+                updateInitialState(); // Reset unsaved changes state
                 renderTable();
             } catch (err) {
                 alert('Hata: ' + err.message);
@@ -130,4 +171,9 @@ export function showBulkTaskCreate() {
     loadMachines().then(() => {
         renderTable();
     });
+    
+    // Cleanup function to remove event listeners when leaving the page
+    return () => {
+        cleanupBeforeUnload();
+    };
 } 

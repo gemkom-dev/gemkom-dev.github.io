@@ -16,6 +16,7 @@ import { showMachiningDetailedReport } from './machiningDetailedReport.js';
 import { showFinishedTimers } from './finishedTimers.js';
 import { showTaskListSection } from './taskList.js';
 import { showBulkTaskCreate } from './bulkTaskCreate.js';
+import { showMachinePlanning } from './machinePlanning.js';
 
 export function handleSidebarClick(label, callback) {
     return (e) => {
@@ -31,11 +32,11 @@ export function setupAdminSidebar(sidebarRoot) {
     const sidebar = new Sidebar(sidebarRoot);
     const user = JSON.parse(localStorage.getItem('user'));
     if (isAdmin()) {
-        sidebar.addItem('Özet');
+        //sidebar.addItem('Özet');
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi', 'Çoklu Kullanıcı Ekle'] });
         sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Görevler', 'Görev Oluştur', 'Biten Zamanlayıcılar', 'Grup Rapor'] });
-        sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Görevler', 'Görev Oluştur', 'Biten Zamanlayıcılar', 'Grup Rapor', 'Planlama'] });
+        //sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar'] });
         sidebar.addItem('Makineler', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
     }
@@ -116,6 +117,12 @@ export function setupSidebarEventListeners() {
     if (GorevOlusturItem) {
         GorevOlusturItem.addEventListener('click', handleSidebarClick('Görev Oluştur', showBulkTaskCreate));
     }
+
+    // Add event listener for machine planning
+    const planlamaItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Planlama');
+    if (planlamaItem) {
+        planlamaItem.addEventListener('click', handleSidebarClick('Planlama', showMachinePlanning));
+    }
 }
 
 export function restoreLastView() {
@@ -135,6 +142,7 @@ export function restoreLastView() {
             case 'Görevler': showTaskListSection(); break;
             case 'Makine Ekle': showMachineCreateForm(); break;
             case 'Görev Oluştur': showBulkTaskCreate(); break;
+            case 'Planlama': showMachinePlanning(); break;
             // Add more as needed
             default: break;
         }
