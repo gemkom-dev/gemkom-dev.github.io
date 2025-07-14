@@ -16,7 +16,7 @@ import { showMachiningDetailedReport } from './machiningDetailedReport.js';
 import { showFinishedTimers } from './finishedTimers.js';
 import { showTaskListSection } from './taskList.js';
 import { showBulkTaskCreate } from './bulkTaskCreate.js';
-import { showMachinePlanning } from './machinePlanning.js';
+import { showMachinePlanning } from './machinePlanning/machinePlanning.js';
 
 export function handleSidebarClick(label, callback) {
     return (e) => {
