@@ -238,7 +238,4 @@ function renderTaskCell(col, task) {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    showMachinePlanning();
-}); 
+ 

@@ -109,6 +109,14 @@ function showTaskInfoModal(taskData) {
                             </div>
                         </div>
                         <hr>
+                        ${taskData.issue_is_hold_task ? `
+                        <div class="row">
+                            <div class="col-md-12">
+                                <strong>Yorum:</strong><br>
+                                <span>${taskData.comment || 'Belirtilmemiş'}</span>
+                            </div>
+                        </div>
+                        ` : `
                         <div class="row">
                             <div class="col-md-6">
                                 <strong>Resim No:</strong><br>
@@ -130,6 +138,7 @@ function showTaskInfoModal(taskData) {
                                 <span>${taskData.machine_name || 'Belirtilmemiş'}</span>
                             </div>
                         </div>
+                        `}
                         <hr>
                         <div class="row">
                             <div class="col-md-6">

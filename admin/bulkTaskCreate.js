@@ -61,7 +61,7 @@ export function showBulkTaskCreate() {
     }
     
     function renderTable() {
-        let html = `<h4>Toplu Görev Oluştur</h4><form id="bulk-task-form"><div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr>`;
+        let html = `<h4>Görev Oluştur</h4><form id="bulk-task-form"><div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr>`;
         for (const col of columns) {
             html += `<th>${col.label}</th>`;
         }
@@ -71,7 +71,7 @@ export function showBulkTaskCreate() {
             for (const col of columns) {
                 if (col.key === 'machine_fk') {
                     // Render machine dropdown
-                    html += `<td><select class="form-control bulk-input" data-row="${i}" data-key="${col.key}">`;
+                    html += `<td><select class="form-control bulk-input" data-row="${i}" data-key="${col.key}" required>`;
                     html += `<option value="">Makine seçin...</option>`;
                     machines.forEach(machine => {
                         const selected = row[col.key] == machine.id ? 'selected' : '';
@@ -79,7 +79,14 @@ export function showBulkTaskCreate() {
                     });
                     html += `</select></td>`;
                 } else {
-                    html += `<td><input type="${col.key === 'quantity' || col.key === 'estimated_hours' ? 'number' : (col.key === 'finish_time' ? 'date' : 'text')}" class="form-control bulk-input" data-row="${i}" data-key="${col.key}" value="${row[col.key] || ''}"></td>`;
+                    const isRequired = ['name', 'job_no', 'quantity', 'estimated_hours', 'finish_time'].includes(col.key);
+                    let inputAttrs = '';
+                    if (col.key === 'estimated_hours') {
+                        inputAttrs = 'step="0.01" min="0.01"';
+                    } else if (col.key === 'quantity') {
+                        inputAttrs = 'min="1"';
+                    }
+                    html += `<td><input type="${col.key === 'quantity' || col.key === 'estimated_hours' ? 'number' : (col.key === 'finish_time' ? 'date' : 'text')}" class="form-control bulk-input" data-row="${i}" data-key="${col.key}" value="${row[col.key] || ''}" ${isRequired ? 'required' : ''} ${inputAttrs}></td>`;
                 }
             }
             html += `<td>
@@ -139,6 +146,52 @@ export function showBulkTaskCreate() {
         };
         document.getElementById('bulk-task-form').onsubmit = async (e) => {
             e.preventDefault();
+            
+            // Validate required fields
+            const requiredFields = ['name', 'job_no', 'quantity', 'estimated_hours', 'machine_fk', 'finish_time'];
+            const missingFields = [];
+            
+            rows.forEach((row, index) => {
+                requiredFields.forEach(field => {
+                    if (!row[field] || row[field].toString().trim() === '') {
+                        missingFields.push(`Satır ${index + 1}: ${columns.find(col => col.key === field)?.label}`);
+                    }
+                });
+            });
+            
+            if (missingFields.length > 0) {
+                alert('Lütfen aşağıdaki zorunlu alanları doldurun:\n' + missingFields.join('\n'));
+                return;
+            }
+            
+            // Validate numeric constraints
+            const validationErrors = [];
+            rows.forEach((row, index) => {
+                // Check estimated_hours constraints
+                if (row.estimated_hours) {
+                    const hours = parseFloat(row.estimated_hours);
+                    if (hours <= 0) {
+                        validationErrors.push(`Satır ${index + 1}: Tahmini Saat 0'dan büyük olmalıdır`);
+                    }
+                    if (hours.toString().includes('.') && hours.toString().split('.')[1].length > 2) {
+                        validationErrors.push(`Satır ${index + 1}: Tahmini Saat en fazla 2 ondalık basamak içerebilir`);
+                    }
+                }
+                
+                // Check quantity constraints
+                if (row.quantity) {
+                    const quantity = parseInt(row.quantity);
+                    if (quantity <= 0) {
+                        validationErrors.push(`Satır ${index + 1}: Adet 0'dan büyük olmalıdır`);
+                    }
+                }
+            });
+            
+            if (validationErrors.length > 0) {
+                alert('Lütfen aşağıdaki hataları düzeltin:\n' + validationErrors.join('\n'));
+                return;
+            }
+            
             // Prepare payload, remove key, convert types
             const payload = rows.map(row => ({
                 name: row.name,
