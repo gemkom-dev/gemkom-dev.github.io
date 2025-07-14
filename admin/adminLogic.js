@@ -34,7 +34,7 @@ export function setupAdminSidebar(sidebarRoot) {
         sidebar.addItem('Özet');
         sidebar.addItem('Kullanıcılar', { subItems: ['Kullanıcı Ekle', 'Kullanıcı Listesi', 'Çoklu Kullanıcı Ekle'] });
         sidebar.addItem('Mesailer', { subItems: ['Mesai Talebi Gönder', 'Mesai Taleplerim'] });
-        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Çoklu Görev Oluştur', 'Biten Zamanlayıcılar', 'Grup Rapor'] });
+        sidebar.addItem('Talaşlı İmalat', { subItems: ['Aktif Zamanlayıcılar', 'Görevler', 'Görev Oluştur', 'Biten Zamanlayıcılar', 'Grup Rapor'] });
         sidebar.addItem('Kesim', { subItems: ['Aktif Zamanlayıcılar', 'İşler', 'Biten Zamanlayıcılar'] });
         sidebar.addItem('Makineler', { subItems: ['Makine Ekle', 'Makine Listesi'] });
         sidebar.addItem('Ayarlar', { subItems: ['Jira Ayarları'] });
@@ -101,9 +101,9 @@ export function setupSidebarEventListeners() {
     }
 
 
-    const islerItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'İşler');
-    if (islerItem) {
-        islerItem.addEventListener('click', handleSidebarClick('İşler', showTaskListSection));
+    const gorevlerItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Görevler');
+    if (gorevlerItem) {
+        gorevlerItem.addEventListener('click', handleSidebarClick('Görevler', showTaskListSection));
     }
 
     const makineEkleItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Makine Ekle');
@@ -112,9 +112,9 @@ export function setupSidebarEventListeners() {
     }
 
     // Add event listener for bulk task creation
-    const cokluGorevOlusturItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Çoklu Görev Oluştur');
-    if (cokluGorevOlusturItem) {
-        cokluGorevOlusturItem.addEventListener('click', handleSidebarClick('Çoklu Görev Oluştur', showBulkTaskCreate));
+    const GorevOlusturItem = Array.from(document.querySelectorAll('.sidebar-subitem')).find(el => el.textContent.trim() === 'Görev Oluştur');
+    if (GorevOlusturItem) {
+        GorevOlusturItem.addEventListener('click', handleSidebarClick('Görev Oluştur', showBulkTaskCreate));
     }
 }
 
@@ -132,8 +132,9 @@ export function restoreLastView() {
             case 'Jira Ayarları': showJiraSettings(); break;
             case 'Grup Rapor': showMachiningDetailedReport(); break;
             case 'Biten Zamanlayıcılar': showFinishedTimers(); break;
-            case 'İşler': showTaskListSection(); break;
+            case 'Görevler': showTaskListSection(); break;
             case 'Makine Ekle': showMachineCreateForm(); break;
+            case 'Görev Oluştur': showBulkTaskCreate(); break;
             // Add more as needed
             default: break;
         }

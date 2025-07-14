@@ -9,7 +9,7 @@ const columns = [
     { key: 'position_no', label: 'Pozisyon No' },
     { key: 'quantity', label: 'Adet' },
     { key: 'estimated_hours', label: 'Tahmini Saat' },
-    { key: 'machine_fk', label: 'Makine' },
+    { key: 'machine_name', label: 'Makine' },
     { key: 'finish_time', label: 'Bitiş Tarihi' },
     { key: 'total_hours_spent', label: 'Harcanan Saat' },
     { key: 'completion_date', label: 'Tamamlanma Tarihi' },
@@ -201,8 +201,8 @@ async function renderTaskListTable(page = currentPage) {
                     val = row.estimated_hours ? `${row.estimated_hours}` : '';
                 } else if (col.key === 'total_hours_spent') {
                     val = row.total_hours_spent ? `${row.total_hours_spent}` : '';
-                } else if (col.key === 'machine_fk') {
-                    val = row.machine_fk ? row.machine_fk : '';
+                } else if (col.key === 'machine_name') {
+                    val = row.machine_name ? row.machine_name : '';
                 } else if (col.key === 'actions') {
                     val = '';
                     if (!row.completion_date) {
