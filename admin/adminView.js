@@ -22,8 +22,7 @@ export async function updateActiveTimers() {
             <td><a href="#" class="task-info-link" data-task='${JSON.stringify(t)}'>${t.issue_key}</a></td>
             <td id="timer-${t.id}">${formatDuration(t.start_time)}</td>
             <td>
-                <button class="btn btn-success btn-sm save-jira" data-timer-id="${t.id}">Jira'ya Kaydet</button>
-                <button class="btn btn-secondary btn-sm stop-only" data-timer-id="${t.id}">Sadece Durdur</button>
+                <button class="btn btn-secondary btn-sm stop-only" data-timer-id="${t.id}">Durdur</button>
             </td>
         `;
         tbody.appendChild(tr);

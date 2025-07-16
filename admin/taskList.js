@@ -1,4 +1,4 @@
-import { backendBase, jiraBase, proxyBase } from '../base.js';
+import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
 import { fetchMachines } from '../generic/machines.js';
 

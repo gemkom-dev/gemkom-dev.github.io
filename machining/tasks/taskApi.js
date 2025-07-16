@@ -30,15 +30,12 @@ export async function fetchTaskDetails(taskKey=null) {
         }
     }
     else if(params.get('hold') !== '1'){
-        const response = await authedFetch(proxyBase + encodeURIComponent(`${jiraBase}/rest/api/3/issue/${taskKey}`), {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        const response = await authedFetch(`${backendBase}/machining/tasks/${taskKey}/`);
         
         if (!response.ok) {
             throw new Error('Task not found');
         }
-        
-        return mapJiraIssueToTask(await response.json());
+        return response.json();
     } else {
         return {
                     key: params.get('key'),
