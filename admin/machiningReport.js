@@ -83,17 +83,6 @@ function setupMachiningTableEventListeners() {
     });
 }
 
-async function fetchActiveTimerById(timerId) {
-    // Fetch all active timers and find the one with the given ID
-    const res = await authedFetch(`/machining/timers/${timerId}/`);
-    if (!res.ok) return null;
-    const timer = await res.json();
-    if (timer.finish_time === null) {
-        return timer;
-    }
-    return null;
-}
-
 async function handleStopOnly(timerId) {
     const finishTime = getSyncedNow();
     // Stop timer with syncToJira=false

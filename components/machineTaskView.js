@@ -1,5 +1,6 @@
 // components/machineTaskView.js
 // Generic machine/task view for machining etc.
+import { extractResultsFromResponse } from '../generic/paginationHelper.js';
 
 export async function createMachineTaskView({
     containerId = 'main-view',
@@ -149,7 +150,7 @@ export async function createMachineTaskView({
                 const { authedFetch } = await import('../authService.js');
                 const resp = await authedFetch(`${backendBase}/machining/hold-tasks/`);
                 const data = await resp.json();
-                const codes = data.results;
+                const codes = extractResultsFromResponse(data);
                 select.innerHTML = codes.map(code => `<option value="${code.key}">${code.name || code.job_no}</option>`).join('');
             } catch (err) {
                 select.innerHTML = '<option>Bekletme nedenleri alınamadı</option>';

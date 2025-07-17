@@ -1,6 +1,7 @@
 // --- machiningService.js ---
 import { backendBase } from '../base.js';
 import { authedFetch } from '../authService.js';
+import { extractResultsFromResponse } from '../generic/paginationHelper.js';
 
 export const state = {
     intervalId: null,
@@ -31,7 +32,7 @@ export async function fetchTasksForMachining(machineId) {
     const resp = await authedFetch(url);
     if (!resp.ok) throw new Error('Görevler alınamadı');
     const data = await resp.json();
-    return data.results;
+    return extractResultsFromResponse(data);
 }
 
 
