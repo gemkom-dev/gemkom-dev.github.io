@@ -1,0 +1,198 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f9f9f9;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ============================================================================
+   LAYOUT STYLES
+   ============================================================================ */
+
+.main-layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.content-area {
+    flex: 1;
+    padding: 20px;
+    background-color: #f9f9f9;
+}
+
+.main-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    padding: 2rem;
+    margin-top: 0;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    /* Layout adjustments for mobile */
+    .main-layout {
+        flex-direction: column;
+    }
+    
+    .content-area {
+        padding: 10px;
+    }
+    
+    .main-container {
+        padding: 1rem;
+        margin-top: 0;
+        border-radius: 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .content-area {
+        padding: 5px;
+    }
+    
+    .main-container {
+        padding: 0.75rem;
+    }
+}
+
+.btn-primary {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* =========================================================================
+   PROCUREMENT SPECIFIC STYLES
+   ========================================================================= */
+
+.procurement-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.procurement-header h1 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2.5rem;
+}
+
+.procurement-header p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.procurement-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #667eea;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.stat-card h3 {
+    color: #667eea;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.8rem;
+    font-weight: 600;
+}
+
+.stat-card p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.procurement-content {
+    background: white;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.procurement-content h2 {
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.procurement-content p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* =========================================================================
+   RESPONSIVE ADJUSTMENTS FOR PROCUREMENT
+   ========================================================================= */
+
+@media (max-width: 768px) {
+    .procurement-header {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .procurement-header h1 {
+        font-size: 2rem;
+    }
+    
+    .procurement-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .procurement-content {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .procurement-header {
+        padding: 1rem;
+    }
+    
+    .procurement-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .procurement-content {
+        padding: 1rem;
+    }
+} 

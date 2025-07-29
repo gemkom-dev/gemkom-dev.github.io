@@ -14,7 +14,8 @@ export const ROUTES = {
     ADMIN: '/admin/',
     MACHINING: '/machining/',
     MACHINING_TASKS: '/machining/tasks/',
-    MAINTENANCE: '/maintenance/'
+    MAINTENANCE: '/maintenance/',
+    PROCUREMENT: '/procurement/'
 };
 
 // Track if we're currently redirecting to prevent loops

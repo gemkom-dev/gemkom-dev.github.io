@@ -193,6 +193,9 @@ export function initNavbar() {
                         <li class="nav-item">
                             <a class="nav-link" href="/maintenance">Bakım</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/procurement">Satın Alma</a>
+                        </li>
                         <li class="nav-item admin-only" style="display: none;">
                             <a class="nav-link" href="/admin">Admin</a>
                         </li>
